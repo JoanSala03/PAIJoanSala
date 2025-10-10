@@ -1,0 +1,63 @@
+/* ==================== 1. ESTIL DEL LOGOTIP H1 ==================== */
+h1 {
+    font-family: cambria; /* Tipografia similar a PIXAR [cite: 460] */
+    font-weight: normal;  /* Elimina la negreta [cite: 460] */
+}
+
+/* ==================== 2. DISSENY DEL HEADER I NAV ==================== */
+/* S'utilitza flotació per col·locar-los al costat [cite: 525] */
+header {
+    width: 20%;
+    float: left;
+}
+
+nav {
+    width: 80%;
+    float: left;
+}
+
+/* ==================== 3. ESTIL DEL MENÚ NAV ==================== */
+nav {
+    font-variant-caps: all-small-caps; /* Força majúscules petites [cite: 515] */
+    font-size: 20px; /* Augmenta la mida de la lletra [cite: 515] */
+}
+
+/* Fa que els elements de la llista (li) estiguin en línia [cite: 517] */
+nav ul li {
+    display: inline;
+    padding-left: 20px; /* Separació entre els elements del menú [cite: 519] */
+}
+
+/* ==================== 4. DISSENY DE LES IMATGES INFERIORS ==================== */
+
+/* Fa que els tres divs flotin i es col·loquin en una fila [cite: 541, 545] */
+#primera, #segona, #tercera {
+    float: left;
+    width: 30%; /* L'amplada es redueix perquè càpiguen els tres [cite: 545] */
+}
+
+/* Afegeix un marge per separar la primera i la segona imatge [cite: 547] */
+#primera, #segona {
+    margin-right: 10px;
+}
+
+/* Centra el bloc de les tres imatges inferiors [cite: 550] */
+.centrat {
+    margin: 0 auto;
+    width: 95%; /* Estableix una amplada per permetre el centrat amb margin: auto [cite: 550] */
+}
+
+/* ==================== 5. ESTIL DELS PARÀGRAFS SOTA LES IMATGES ==================== */
+/* Es pot fer amb un selector més específic, però s'aplica al p per simplicitat [cite: 555] */
+.centrat p {
+    font-size: 20px;
+    font-variant-caps: all-small-caps;
+    text-align: center; /* Centra el text sota cada imatge [cite: 555] */
+}
+
+/* ==================== 6. PAS FINAL PENDENT (Separació) ==================== */
+/* Per separar la imatge gran de les petites (menció a la pàgina 26, pas 1) */
+/* Es pot afegir marge a la primera secció */
+section {
+    margin-bottom: 20px; 
+}

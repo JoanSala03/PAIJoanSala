@@ -1,0 +1,26 @@
+h1 {
+    font-family:charlemagne, sans-serif;
+}
+
+#logo-pixar {
+    width: 150px;
+    /* Horitzontal i centrada */
+    display: block;
+    margin: auto;
+    margin-bottom: 20px;
+    /* Espai superior */
+    padding-top: 20px;
+}
+
+li {
+    /* Horitzontal i sense punts */
+    list-style: none;
+    margin-right: 20px;
+}
+
+ul {
+    /* Horitzontal i centrada */
+    display: flex;
+    justify-content: center;
+    padding-left: 0;
+}

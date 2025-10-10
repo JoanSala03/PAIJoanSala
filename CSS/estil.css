@@ -1,0 +1,17 @@
+h1 {
+    color: darkseagreen;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+p {
+    color:rgb(70, 91, 205);
+    font-size: 20px;
+    font-weight: 900;
+}
+
+h2 {
+    color: darkorange;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: left;
+}
