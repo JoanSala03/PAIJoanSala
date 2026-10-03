@@ -24,7 +24,7 @@
   const FORMATIONS = ['3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-5-1', '5-3-2', '5-4-1'];
   const FDR_TXT = { 1: 'Muy asequible', 2: 'Asequible', 3: 'Igualado', 4: 'Exigente', 5: 'Muy exigente' };
   const MAX_SQUAD = 24;
-  const STORE = 'pizarra-fantasy-v1';
+  const STORE = 'pizarra-fantasy-v2';
 
   const PLAYED = DB.playedJornadas(new Date());
   const NEXT = Math.min(38, PLAYED + 1);
@@ -32,22 +32,22 @@
   const dateTxt = (iso, opts = { weekday: 'short', day: 'numeric', month: 'short' }) =>
     new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', opts).replace('.', '');
 
-  const EXAMPLE = ['rma-courtois', 'get-david-soria', 'bar-kounde', 'rma-huijsen', 'atm-hancko', 'cel-mingueza', 'ray-ratiu',
-    'osa-catena', 'bar-pedri', 'atm-alex-baena', 'ray-isi-palazon', 'val-javi-guerra', 'bet-isco', 'rma-mbappe',
-    'rso-oyarzabal', 'osa-ante-budimir', 'bet-antony', 'dep-yeremay-hernandez'];
+  const EXAMPLE = ['rma-courtois', 'get-david-soria', 'bar-jules-kounde', 'rma-dean-huijsen', 'atm-david-hancko', 'atm-alex-grimaldo',
+    'ray-andrei-ratiu', 'osa-alejandro-catena', 'bar-pedri', 'atm-alex-baena', 'ray-isi-palazon', 'val-javi-guerra', 'bet-isco',
+    'rma-kylian-mbappe', 'rso-mikel-oyarzabal', 'osa-ante-budimir', 'bet-antony', 'dep-yeremay-hernandez'];
 
   /* ---------------- Estado ---------------- */
   const defaults = () => ({
-    v: 1, squad: EXAMPLE.slice(), example: true, formation: '4-3-3', lineup: null, budget: 8.5,
+    v: 2, squad: EXAMPLE.slice(), example: true, formation: '4-3-3', lineup: null, budget: 8.5,
     overrides: {}, statusOv: {}, valueOv: {}, apiIds: {}, custom: [], tab: 'resumen', noticeHidden: false,
     market: { q: '', pos: 'ALL', team: 'ALL', max: '', sort: 'xp', dir: -1, limit: 40 },
-    calOnlyMine: false, calJ: LAST, cmp: ['rma-mbappe', 'bar-lamine-yamal']
+    calOnlyMine: false, calJ: LAST, cmp: ['rma-kylian-mbappe', 'bar-lamine-yamal']
   });
   let state = load();
   function load() {
     try {
       const raw = localStorage.getItem(STORE);
-      if (raw) { const s = JSON.parse(raw); if (s && s.v === 1) return Object.assign(defaults(), s, { market: Object.assign(defaults().market, s.market) }); }
+      if (raw) { const s = JSON.parse(raw); if (s && s.v === 2) return Object.assign(defaults(), s, { market: Object.assign(defaults().market, s.market) }); }
     } catch (e) { /* almacenamiento no disponible */ }
     return defaults();
   }
@@ -333,10 +333,22 @@
       <button class="btn btn-sm btn-ghost" data-action="hide-notice" aria-label="Ocultar aviso">✕</button></div>`;
   }
 
+  function addPlayersPanel(empty) {
+    const n = state.squad.length;
+    return `<section class="panel add-panel">
+      <div class="add-panel-text">
+        <h2 class="panel-title">${empty ? 'Monta tu plantilla' : 'Añade jugadores'}</h2>
+        <p class="panel-sub">Están los ${f0(DB.PLAYERS.length)} jugadores de los 20 equipos de LaLiga 2026/27. Escribe dos letras del nombre, del equipo o el dorsal y pulsa <b>+</b>.</p>
+      </div>
+      ${searchBox('vsearch', 'Ej.: «lam», «pedri», «betis», «10»…', true)}
+      <div class="add-panel-foot"><span class="num"><b>${n}</b>/${MAX_SQUAD} en tu plantilla</span>
+        <span class="muted">Atajos: <kbd>/</kbd> buscar · <kbd>Shift</kbd>+<kbd>Enter</kbd> añadir</span></div>
+    </section>`;
+  }
   function emptySquad() {
-    return `<div class="panel"><div class="empty-state"><h3>Tu plantilla está vacía</h3>
-      <p>Busca a tus jugadores en el mercado y pulsa <b>+</b> para añadirlos. La app calculará su forma, rivales y puntos esperados.</p>
-      <button class="btn btn-primary" data-action="tab" data-tab="mercado">Ir al mercado</button></div></div>`;
+    return addPlayersPanel(true) + `<div class="panel"><div class="empty-state"><h3>Tu plantilla está vacía</h3>
+      <p>Usa el buscador de arriba para añadir a tus jugadores. La app calculará su forma, rivales y puntos esperados.</p>
+      <button class="btn" data-action="tab" data-tab="mercado">O explora el mercado completo</button></div></div>`;
   }
 
   function viewResumen() {
@@ -446,6 +458,7 @@
     };
 
     return `
+    ${addPlayersPanel()}
     <section class="panel">
       <div class="toolbar" style="justify-content:space-between">
         <div class="field">Formación<div class="chips" role="group" aria-label="Formación">${FORMATIONS.map(f => `<button class="chip" aria-pressed="${f === state.formation}" data-action="formation" data-f="${f}">${f}</button>`).join('')}</div></div>
@@ -701,7 +714,7 @@
       <div class="modal-head" style="--c1:${t.color};--c2:${t.color2}">
         ${jersey(p, 64)}
         <div style="min-width:0"><h2>${esc(p.name)}</h2>
-          <div class="sub">${posTag(p.pos)} ${POS_NAME[p.pos]} · ${esc(t.name)} ${statusPill(p)} ${p.custom ? '<span class="status st-doubtful">Manual</span>' : ''}</div></div>
+          <div class="sub">${posTag(p.pos)} ${POS_NAME[p.pos]} · ${esc(t.name)}${p.num ? ` · #${p.num}` : ""} ${statusPill(p)} ${p.custom ? '<span class="status st-doubtful">Manual</span>' : ''}</div></div>
         <button class="modal-close" data-action="close-modal" aria-label="Cerrar">✕</button>
       </div>
       <div class="modal-body">
@@ -857,6 +870,103 @@
     }
   }
 
+
+  /* ---------------- Buscador con sugerencias ---------------- */
+  const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  function searchPlayers(query, limit = 8) {
+    const q = norm(query).trim();
+    if (!q) return { list: [], total: 0 };
+    const tokens = q.split(/\s+/);
+    const isNum = /^\d{1,2}$/.test(q);
+    const scored = [];
+    ALL.forEach(p => {
+      const n = norm(p.name), t = norm(team(p.team).name) + ' ' + p.team.toLowerCase();
+      if (isNum) { if (String(p.num) === q) scored.push({ p, s: 0 }); return; }
+      let s = 0;
+      for (const tk of tokens) {
+        if (n.startsWith(tk)) s += 0;
+        else if (n.split(/[\s.\-']+/).some(w => w.startsWith(tk))) s += 1;
+        else if (n.includes(tk)) s += 2;
+        else if (t.split(/\s+/).some(w => w.startsWith(tk))) s += 3;
+        else return;
+      }
+      scored.push({ p, s });
+    });
+    scored.sort((a, b) => a.s - b.s || b.p.q - a.p.q || a.p.name.localeCompare(b.p.name));
+    return { list: scored.slice(0, limit).map(x => x.p), total: scored.length };
+  }
+  function highlight(name, query) {
+    const nq = norm(query).trim();
+    if (!nq || /^\d+$/.test(nq)) return esc(name);
+    const n = norm(name);
+    const marks = new Array(name.length).fill(false);
+    nq.split(/\s+/).forEach(tk => {
+      let i = -1;
+      const re = new RegExp('(^|[\\s.\\-\'])' + tk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const m = re.exec(n);
+      if (m) i = m.index + m[1].length; else i = n.indexOf(tk);
+      if (i >= 0) for (let k = i; k < i + tk.length && k < marks.length; k++) marks[k] = true;
+    });
+    let out = '', open = false;
+    for (let i = 0; i < name.length; i++) {
+      if (marks[i] && !open) { out += '<mark>'; open = true; }
+      if (!marks[i] && open) { out += '</mark>'; open = false; }
+      out += esc(name[i]);
+    }
+    return out + (open ? '</mark>' : '');
+  }
+  const searchState = {};
+  function renderSuggestions(input) {
+    const box = input.closest('.psearch'), pop = box.querySelector('.psearch-pop');
+    const q = input.value;
+    const nq = norm(q).trim();
+    const ss = searchState[input.id] = searchState[input.id] || { active: 0 };
+    if (nq.length < 2 && !/^\d$/.test(nq)) {
+      pop.hidden = true; input.setAttribute('aria-expanded', 'false');
+      if (nq.length === 1) { pop.hidden = false; pop.innerHTML = '<p class="sug-empty">Escribe una letra más…</p>'; }
+      return;
+    }
+    const { list, total } = searchPlayers(q, 8);
+    ss.ids = list.map(p => p.id);
+    ss.active = clamp(ss.active, 0, Math.max(0, list.length - 1));
+    pop.hidden = false; input.setAttribute('aria-expanded', 'true');
+    if (!list.length) {
+      pop.innerHTML = `<p class="sug-empty">No hay ningún jugador de LaLiga con «${esc(q)}».<br><button class="link" data-action="open-data">Añadir uno a mano</button></p>`;
+      return;
+    }
+    pop.innerHTML = `<div class="sug-head"><span>${total === 1 ? '1 jugador' : `${total} jugadores`}${total > list.length ? ` · mostrando ${list.length}` : ''}</span><span class="sug-keys">↑↓ elegir · Enter ficha · + plantilla</span></div>`
+      + `<div role="listbox" id="${input.id}-list">` + list.map((p, i) => {
+        const m = metrics(p), own = inSquad(p.id);
+        return `<div class="sug${own ? ' own' : ''}" role="option" id="${input.id}-opt-${i}" aria-selected="${i === ss.active}" data-action="sug-open" data-id="${p.id}" data-input="${input.id}">
+          ${crest(p.team)}
+          <div class="sug-main"><span class="sug-name">${highlight(p.name, q)}</span>
+            <span class="pmeta">${posTag(p.pos)} ${esc(team(p.team).name)}${p.num ? ` · <span class="num">#${p.num}</span>` : ''} · ${STATUS_TXT[statusOf(p)]}</span></div>
+          <div class="sug-stats"><b class="num">${money(m.value)}</b><span class="num">${f1(m.avg)} pts/partido</span></div>
+          <button class="add-btn${own ? ' owned' : ''}" data-action="sug-toggle" data-id="${p.id}" data-input="${input.id}" aria-label="${own ? 'Quitar' : 'Añadir'} ${esc(p.name)}" title="${own ? 'En tu plantilla (pulsa para quitar)' : 'Añadir a mi plantilla'}">${own ? '✓' : '+'}</button>
+        </div>`;
+      }).join('') + '</div>';
+    input.setAttribute('aria-activedescendant', `${input.id}-opt-${ss.active}`);
+  }
+  function closeSuggestions(except) {
+    $$('.psearch').forEach(b => {
+      const inp = b.querySelector('input');
+      if (inp === except) return;
+      b.querySelector('.psearch-pop').hidden = true; inp.setAttribute('aria-expanded', 'false');
+    });
+  }
+  function restoreSearch(inputId, value) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.value = value; inp.focus();
+    renderSuggestions(inp);
+  }
+  const searchBox = (id, placeholder, big) => `
+    <div class="psearch${big ? ' big' : ''}">
+      <svg class="psearch-ico" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m13 13 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="${id}" class="psearch-input" type="search" autocomplete="off" spellcheck="false" placeholder="${placeholder}" role="combobox" aria-expanded="false" aria-controls="${id}-list" aria-autocomplete="list" aria-label="Buscar jugador">
+      <div class="psearch-pop" hidden></div>
+    </div>`;
+
   /* ---------------- Acciones ---------------- */
   function toggleSquad(id) {
     const p = BY[id];
@@ -896,12 +1006,18 @@
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-action]');
     const dlg = $('#modal');
+    if (!e.target.closest('.psearch')) closeSuggestions();
     if (!el) { if (e.target === dlg) dlg.close(); return; }
     const a = el.dataset.action, id = el.dataset.id;
     const refreshModal = () => { if (dlg.open && dlg.dataset.player) openPlayer(dlg.dataset.player); };
     switch (a) {
       case 'tab': if (el.dataset.close && dlg.open) dlg.close(); if (el.dataset.pos) { state.market.pos = el.dataset.pos; state.market.limit = 40; } setTab(el.dataset.tab); break;
       case 'player': editing = false; openPlayer(id); break;
+      case 'sug-open': closeSuggestions(); editing = false; openPlayer(id); break;
+      case 'sug-toggle': {
+        const inp = document.getElementById(el.dataset.input), val = inp ? inp.value : '';
+        toggleSquad(id); render(); restoreSearch(el.dataset.input, val); break;
+      }
       case 'close-modal': dlg.close(); break;
       case 'toggle-squad': toggleSquad(id); render(); refreshModal(); break;
       case 'formation': state.formation = el.dataset.f; state.lineup = bestXI(state.formation, state.squad); render(); break;
@@ -955,7 +1071,8 @@
         break;
       case 'api-sync': syncApi(); break;
       case 'clear-squad': if (armed('clear', el, 'Pulsa otra vez para vaciar')) { state.squad = []; state.lineup = null; state.example = false; dlg.close(); render(); toast('Plantilla vaciada'); } break;
-      case 'clear-squad-direct': state.squad = []; state.lineup = null; state.example = false; setTab('mercado'); toast('Plantilla vacía: añade a tus jugadores con +'); break;
+      case 'clear-squad-direct': state.squad = []; state.lineup = null; state.example = false; setTab('equipo'); { const v = $('#vsearch'); if (v) v.focus(); } toast('Escribe dos letras y añade a tus jugadores con +'); break;
+      case 'focus-search': { const v = $('#vsearch') || $('#gsearch'); if (v) { v.focus(); v.scrollIntoView({ block: 'center' }); } break; }
       case 'reset-all': if (armed('reset', el, 'Pulsa otra vez para borrarlo todo')) { state = defaults(); dlg.close(); render(); toast('Datos restablecidos'); } break;
     }
   });
@@ -963,6 +1080,7 @@
   let qT;
   document.addEventListener('input', e => {
     const t = e.target;
+    if (t.classList && t.classList.contains('psearch-input')) { (searchState[t.id] = searchState[t.id] || {}).active = 0; renderSuggestions(t); return; }
     if (t.id === 'mk-q') { clearTimeout(qT); qT = setTimeout(() => { state.market.q = t.value; state.market.limit = 40; updateMarket(); save(); }, 120); }
     if (t.id === 'mk-max') { state.market.max = t.value; updateMarket(); save(); }
     if (t.id === 'budget') { state.budget = Number(t.value) || 0; save(); clearTimeout(qT); qT = setTimeout(() => { const pos = t.selectionStart; render(); const b = $('#budget'); if (b) { b.focus(); try { b.setSelectionRange(pos, pos); } catch (er) { /* number input */ } } }, 500); }
@@ -971,6 +1089,19 @@
       if (p) { state.cmp[t.id === 'cmp-0' ? 0 : 1] = p.id; save(); const [a, b] = state.cmp.map(i => BY[i]); $('#cmp-out').innerHTML = a && b ? compareHtml(a, b) : ''; }
     }
   });
+
+  document.addEventListener('keydown', e => {
+    const t = e.target;
+    if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(t.tagName) && !$('#modal').open) { e.preventDefault(); $('#gsearch').focus(); return; }
+    if (!t.classList || !t.classList.contains('psearch-input')) return;
+    const ss = searchState[t.id] || { active: 0, ids: [] };
+    const n = (ss.ids || []).length;
+    if (e.key === 'ArrowDown' && n) { e.preventDefault(); ss.active = (ss.active + 1) % n; renderSuggestions(t); }
+    else if (e.key === 'ArrowUp' && n) { e.preventDefault(); ss.active = (ss.active - 1 + n) % n; renderSuggestions(t); }
+    else if (e.key === 'Enter' && n) { e.preventDefault(); const id = ss.ids[ss.active]; if (e.shiftKey || e.ctrlKey || e.metaKey) { const v = t.value; toggleSquad(id); render(); restoreSearch(t.id, v); } else { closeSuggestions(); openPlayer(id); } }
+    else if (e.key === 'Escape') { t.value = ''; closeSuggestions(); }
+  });
+  document.addEventListener('focusin', e => { const t = e.target; if (t.classList && t.classList.contains('psearch-input') && t.value) renderSuggestions(t); });
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.id === 'mk-team') { state.market.team = t.value; state.market.limit = 40; updateMarket(); save(); }
@@ -1013,6 +1144,7 @@
   /* ---------------- Arranque ---------------- */
   $$('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
   $('#data-btn').addEventListener('click', openData);
+  $('#gsearch-slot').outerHTML = searchBox('gsearch', 'Buscar jugador…');
   $('#md-label').innerHTML = `<b>J${NEXT}</b><span>${dateTxt(DB.DATES[NEXT - 1])}</span>`;
   const h = (location.hash || '').slice(1);
   if (VIEWS[h]) state.tab = h;

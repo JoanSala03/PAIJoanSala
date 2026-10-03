@@ -34,77 +34,56 @@
     { id: 'VIL', name: 'Villarreal',      color: '#f5d000', color2: '#00529f', str: 80 }
   ];
 
-  /* ---------- Plantillas de referencia: [equipo, nombre, posición, calidad 1-10] ---------- */
+  /* ---------- Plantillas 2026/27 (dorsales oficiales de verano): [equipo, nombre, posición, nivel 1-10, dorsal] ---------- */
   const RAW = [
-    ['RMA','Courtois','POR',9],['RMA','Carvajal','DEF',6],['RMA','Militão','DEF',7],['RMA','Huijsen','DEF',8],
-    ['RMA','Alexander-Arnold','DEF',7],['RMA','Álvaro Carreras','DEF',7],['RMA','Valverde','CEN',8],['RMA','Bellingham','CEN',9],
-    ['RMA','Tchouaméni','CEN',7],['RMA','Arda Güler','CEN',8],['RMA','Mastantuono','CEN',6],['RMA','Mbappé','DEL',10],
-    ['RMA','Vinícius Jr.','DEL',9],['RMA','Rodrygo','DEL',7],
-    ['BAR','Joan García','POR',9],['BAR','Koundé','DEF',8],['BAR','Cubarsí','DEF',8],['BAR','Araujo','DEF',6],
-    ['BAR','Balde','DEF',7],['BAR','Eric García','DEF',6],['BAR','Pedri','CEN',9],['BAR','Frenkie de Jong','CEN',7],
-    ['BAR','Fermín López','CEN',7],['BAR','Gavi','CEN',6],['BAR','Dani Olmo','CEN',7],['BAR','Lamine Yamal','DEL',10],
-    ['BAR','Raphinha','DEL',9],['BAR','Ferran Torres','DEL',7],
-    ['ATM','Oblak','POR',8],['ATM','Le Normand','DEF',6],['ATM','Giménez','DEF',6],['ATM','Hancko','DEF',7],
-    ['ATM','Marcos Llorente','DEF',7],['ATM','Koke','CEN',6],['ATM','Pablo Barrios','CEN',7],['ATM','Álex Baena','CEN',8],
-    ['ATM','Julián Álvarez','DEL',9],['ATM','Sørloth','DEL',7],['ATM','Giuliano Simeone','DEL',7],
-    ['ATH','Unai Simón','POR',7],['ATH','Dani Vivian','DEF',6],['ATH','Laporte','DEF',6],['ATH','Yuri Berchiche','DEF',5],
-    ['ATH','Gorosabel','DEF',5],['ATH','Oihan Sancet','CEN',7],['ATH','Jauregizar','CEN',6],['ATH','Nico Williams','DEL',8],
-    ['ATH','Iñaki Williams','DEL',6],['ATH','Guruzeta','DEL',6],['ATH','Berenguer','DEL',6],
-    ['VIL','Luiz Júnior','POR',6],['VIL','Mouriño','DEF',6],['VIL','Renato Veiga','DEF',6],['VIL','Pedraza','DEF',6],
-    ['VIL','Parejo','CEN',6],['VIL','Comesaña','CEN',6],['VIL','Moleiro','CEN',7],['VIL','Nicolas Pépé','DEL',7],
-    ['VIL','Gerard Moreno','DEL',7],['VIL','Mikautadze','DEL',7],['VIL','Ayoze Pérez','DEL',7],
-    ['BET','Pau López','POR',6],['BET','Bellerín','DEF',5],['BET','Natan','DEF',6],['BET','Ricardo Rodríguez','DEF',5],
-    ['BET','Isco','CEN',7],['BET','Pablo Fornals','CEN',7],['BET','Lo Celso','CEN',7],['BET','Antony','DEL',8],
-    ['BET','Abde','DEL',7],['BET','Cucho Hernández','DEL',7],
-    ['RSO','Remiro','POR',7],['RSO','Aramburu','DEF',5],['RSO','Zubeldia','DEF',6],['RSO','Sergio Gómez','DEF',6],
-    ['RSO','Brais Méndez','CEN',6],['RSO','Turrientes','CEN',5],['RSO','Take Kubo','DEL',7],['RSO','Oyarzabal','DEL',8],
-    ['RSO','Barrenetxea','DEL',6],
-    ['CEL','Radu','POR',5],['CEL','Mingueza','DEF',6],['CEL','Starfelt','DEF',5],['CEL','Javi Rodríguez','DEF',5],
-    ['CEL','Ilaix Moriba','CEN',6],['CEL','Fran Beltrán','CEN',5],['CEL','Iago Aspas','DEL',6],['CEL','Borja Iglesias','DEL',7],
-    ['CEL','Williot Swedberg','DEL',6],['CEL','Bryan Zaragoza','DEL',6],
-    ['SEV','Vlachodimos','POR',6],['SEV','Azpilicueta','DEF',5],['SEV','Kike Salas','DEF',5],['SEV','José Ángel Carmona','DEF',5],
-    ['SEV','Agoumé','CEN',5],['SEV','Djibril Sow','CEN',5],['SEV','Rubén Vargas','DEL',6],['SEV','Isaac Romero','DEL',6],
-    ['SEV','Akor Adams','DEL',6],
-    ['VAL','Dimitrievski','POR',6],['VAL','Gayà','DEF',6],['VAL','Tárrega','DEF',6],['VAL','Foulquier','DEF',5],
-    ['VAL','Pepelu','CEN',6],['VAL','Javi Guerra','CEN',7],['VAL','Diego López','DEL',7],['VAL','Hugo Duro','DEL',7],
-    ['VAL','Arnaut Danjuma','DEL',6],['VAL','Luis Rioja','DEL',6],
-    ['OSA','Sergio Herrera','POR',6],['OSA','Catena','DEF',6],['OSA','Rosier','DEF',5],['OSA','Abel Bretones','DEF',5],
-    ['OSA','Moncayola','CEN',5],['OSA','Lucas Torró','CEN',5],['OSA','Aimar Oroz','CEN',6],['OSA','Rubén García','DEL',6],
-    ['OSA','Ante Budimir','DEL',7],['OSA','Víctor Muñoz','DEL',6],
-    ['GET','David Soria','POR',7],['GET','Djené','DEF',6],['GET','Domingos Duarte','DEF',5],['GET','Juan Iglesias','DEF',5],
-    ['GET','Luis Milla','CEN',6],['GET','Arambarri','CEN',5],['GET','Borja Mayoral','DEL',6],['GET','Adrián Liso','DEL',6],
-    ['RAY','Augusto Batalla','POR',7],['RAY','Lejeune','DEF',6],['RAY','Ratiu','DEF',6],['RAY','Pep Chavarría','DEF',5],
-    ['RAY','Isi Palazón','CEN',7],['RAY','Unai López','CEN',5],['RAY','Óscar Valentín','CEN',5],['RAY','Álvaro García','DEL',6],
-    ['RAY','Jorge de Frutos','DEL',6],['RAY','Alemão','DEL',6],
-    ['ESP','Dmitrovic','POR',6],['ESP','Omar El Hilali','DEF',5],['ESP','Leandro Cabrera','DEF',5],['ESP','Carlos Romero','DEF',5],
-    ['ESP','Edu Expósito','CEN',6],['ESP','Pol Lozano','CEN',5],['ESP','Pere Milla','CEN',5],['ESP','Roberto Fernández','DEL',6],
-    ['ESP','Kike García','DEL',6],['ESP','Javi Puado','DEL',6],
-    ['ALA','Antonio Sivera','POR',6],['ALA','Nahuel Tenaglia','DEF',5],['ALA','Jon Pacheco','DEF',5],['ALA','Jonny Otto','DEF',5],
-    ['ALA','Jon Guridi','CEN',6],['ALA','Antonio Blanco','CEN',5],['ALA','Carlos Vicente','DEL',6],['ALA','Toni Martínez','DEL',6],
-    ['ALA','Lucas Boyé','DEL',6],
-    ['ELC','Matías Dituro','POR',5],['ELC','Pedro Bigas','DEF',5],['ELC','Affengruber','DEF',5],['ELC','Álvaro Núñez','DEF',5],
-    ['ELC','Aleix Febas','CEN',5],['ELC','Marc Aguado','CEN',5],['ELC','Rafa Mir','DEL',6],['ELC','André Silva','DEL',6],
-    ['ELC','Germán Valera','DEL',5],
-    ['LEV','Mathew Ryan','POR',5],['LEV','Unai Elgezabal','DEF',5],['LEV','Matías Moreno','DEF',5],['LEV','Manu Sánchez','DEF',5],
-    ['LEV','Oriol Rey','CEN',5],['LEV','Pablo Martínez','CEN',5],['LEV','Carlos Álvarez','CEN',6],['LEV','Iván Romero','DEL',6],
-    ['LEV','Roger Brugué','DEL',5],
-    ['RAC','Jokin Ezkieta','POR',5],['RAC','Mantilla','DEF',5],['RAC','Javi Castro','DEF',5],['RAC','Saúl García','DEF',5],
-    ['RAC','Íñigo Sainz-Maza','CEN',5],['RAC','Peio Canales','CEN',6],['RAC','Andrés Martín','DEL',6],['RAC','Asier Villalibre','DEL',5],
-    ['RAC','Juan Carlos Arana','DEL',5],
-    ['DEP','Germán Parreño','POR',5],['DEP','Ximo Navarro','DEF',5],['DEP','Pablo Vázquez','DEF',5],['DEP','Sergio Escudero','DEF',5],
-    ['DEP','José Ángel','CEN',5],['DEP','Diego Villares','CEN',5],['DEP','Yeremay Hernández','DEL',7],['DEP','David Mella','DEL',6],
-    ['DEP','Zakaria Eddahchouri','DEL',6],
-    ['MAL','Alfonso Herrero','POR',5],['MAL','Einar Galilea','DEF',5],['MAL','Carlos Puga','DEF',5],['MAL','Dani Sánchez','DEF',5],
-    ['MAL','Dani Lorenzo','CEN',5],['MAL','Izan Merino','CEN',5],['MAL','Joaquín Muñoz','DEL',6],['MAL','Chupe','DEL',6],
-    ['MAL','David Larrubia','DEL',6]
+    // RMA
+    ["RMA","Courtois",'POR',9,1],["RMA","Lunin",'POR',5,13],["RMA","Raúl Asencio",'DEF',6,2],["RMA","Éder Militão",'DEF',7,3],["RMA","Dean Huijsen",'DEF',8,4],["RMA","Alexander-Arnold",'DEF',7,12],["RMA","Ibrahima Konaté",'DEF',7,16],["RMA","Marc Cucurella",'DEF',7,17],["RMA","Álvaro Carreras",'DEF',7,18],["RMA","Antonio Rüdiger",'DEF',6,22],["RMA","Ferland Mendy",'DEF',5,23],["RMA","Denzel Dumfries",'DEF',7,24],["RMA","Jude Bellingham",'CEN',9,5],["RMA","Eduardo Camavinga",'CEN',7,6],["RMA","Fede Valverde",'CEN',8,8],["RMA","Aurélien Tchouaméni",'CEN',7,14],["RMA","Arda Güler",'CEN',8,15],["RMA","Bernardo Silva",'CEN',8,20],["RMA","Thiago Pitarch",'CEN',4,27],["RMA","Vinícius Jr.",'DEL',9,7],["RMA","Endrick",'DEL',6,9],["RMA","Kylian Mbappé",'DEL',10,10],["RMA","Rodrygo",'DEL',7,11],["RMA","Carlos Espí",'DEL',5,19],["RMA","Brahim Díaz",'DEL',6,21],["RMA","Yan Diomande",'DEL',7,25],
+    // BAR
+    ["BAR","Joan García",'POR',9,1],["BAR","Wojciech Szczęsny",'POR',5,13],["BAR","Dominik Livaković",'POR',5,25],["BAR","João Cancelo",'DEF',7,2],["BAR","Alejandro Balde",'DEF',7,3],["BAR","Brian Fariñas",'DEF',4,4],["BAR","Pau Cubarsí",'DEF',8,5],["BAR","Xavi Espart",'DEF',4,12],["BAR","Andreas Christensen",'DEF',5,15],["BAR","Gerard Martín",'DEF',6,18],["BAR","Jules Koundé",'DEF',8,23],["BAR","Eric García",'DEF',6,24],["BAR","Gavi",'CEN',7,6],["BAR","Fermín López",'CEN',8,7],["BAR","Pedri",'CEN',9,8],["BAR","Dani Olmo",'CEN',7,20],["BAR","Frenkie de Jong",'CEN',8,21],["BAR","Marc Bernal",'CEN',6,22],["BAR","Gabriel Jesus",'DEL',7,9],["BAR","Lamine Yamal",'DEL',10,10],["BAR","Raphinha",'DEL',9,11],["BAR","Karim Adeyemi",'DEL',7,14],["BAR","Anthony Gordon",'DEL',8,17],["BAR","Roony Bardghji",'DEL',6,19],["BAR","Hamza Abdelkarim",'DEL',4,29],
+    // ATM
+    ["ATM","Juan Musso",'POR',5,1],["ATM","Jan Oblak",'POR',8,13],["ATM","Marcos Llorente",'DEF',7,14],["ATM","Dávid Hancko",'DEF',7,17],["ATM","Marc Pubill",'DEF',6,18],["ATM","Cuti Romero",'DEF',7,21],["ATM","Álex Grimaldo",'DEF',8,22],["ATM","Robin Le Normand",'DEF',6,24],["ATM","Obed Vargas",'CEN',5,3],["ATM","Rodrigo Mendoza",'CEN',5,4],["ATM","Johnny Cardoso",'CEN',6,5],["ATM","Koke",'CEN',6,6],["ATM","Kang-in Lee",'CEN',7,7],["ATM","Pablo Barrios",'CEN',7,8],["ATM","Álex Baena",'CEN',8,10],["ATM","Morten Hjulmand",'CEN',7,23],["ATM","Alexander Sørloth",'DEL',7,9],["ATM","Ademola Lookman",'DEL',8,11],["ATM","Jonathan David",'DEL',7,15],["ATM","Arnau Ortiz",'DEL',4,16],["ATM","Julián Álvarez",'DEL',9,19],["ATM","Giuliano Simeone",'DEL',7,20],
+    // ATH
+    ["ATH","Unai Simón",'POR',7,1],["ATH","Álex Padilla",'POR',5,13],["ATH","Mikel Santos",'POR',3,26],["ATH","Andoni Gorosabel",'DEF',5,2],["ATH","Dani Vivian",'DEF',6,3],["ATH","Aitor Paredes",'DEF',6,4],["ATH","Yeray Álvarez",'DEF',5,5],["ATH","Jesús Areso",'DEF',6,12],["ATH","Aymeric Laporte",'DEF',6,14],["ATH","Hugo Rincón",'DEF',4,15],["ATH","Yuri Berchiche",'DEF',5,17],["ATH","Adama Boiro",'DEF',5,19],["ATH","Unai Monreal",'DEF',4,30],["ATH","Beñat Prados",'CEN',5,6],["ATH","Oihan Sancet",'CEN',7,8],["ATH","Iñigo Ruiz de Galarreta",'CEN',6,16],["ATH","Mikel Jauregizar",'CEN',7,18],["ATH","Alejandro Rego",'CEN',5,20],["ATH","Unai Gerenabarrena",'CEN',4,24],["ATH","Peio Canales",'CEN',6,28],["ATH","Selton Sánchez",'CEN',5,44],["ATH","Álex Berenguer",'DEL',6,7],["ATH","Iñaki Williams",'DEL',6,9],["ATH","Nico Williams",'DEL',8,10],["ATH","Gorka Guruzeta",'DEL',6,11],["ATH","Maroan Sannadi",'DEL',5,21],["ATH","Nico Serrano",'DEL',5,22],["ATH","Robert Navarro",'DEL',6,23],["ATH","Álvaro Djaló",'DEL',5,25],["ATH","Asier Hierro",'DEL',4,29],
+    // VIL
+    ["VIL","Luiz Júnior",'POR',6,1],["VIL","Rubén Gómez",'POR',3,13],["VIL","Péter Gulácsi",'POR',5,25],["VIL","Juan Foyth",'DEF',6,8],["VIL","Logan Costa",'DEF',6,2],["VIL","Alassane Diatta",'DEF',4,4],["VIL","Renato Veiga",'DEF',6,12],["VIL","Santiago Mouriño",'DEF',6,15],["VIL","Willy Kambwala",'DEF',5,5],["VIL","Pau Navarro",'DEF',5,26],["VIL","Alex Freeman",'DEF',5,3],["VIL","Carlos Romero",'DEF',6,20],["VIL","Sergi Cardona",'DEF',6,23],["VIL","Thomas Partey",'CEN',7,16],["VIL","Pape Gueye",'CEN',6,18],["VIL","Santi Comesaña",'CEN',6,14],["VIL","Carlos Macià",'CEN',4,28],["VIL","Alberto Moleiro",'CEN',8,10],["VIL","Nicolas Pépé",'DEL',7,19],["VIL","Gerard Moreno",'DEL',7,7],["VIL","Georges Mikautadze",'DEL',7,9],["VIL","Ayoze Pérez",'DEL',7,22],["VIL","Ilias Akhomach",'DEL',6,11],["VIL","Tani Oluwaseyi",'DEL',6,21],["VIL","Tajon Buchanan",'DEL',6,17],
+    // BET
+    ["BET","Álvaro Valles",'POR',6,1],["BET","Diego Conde",'POR',5,13],["BET","Manu González",'POR',3,31],["BET","Héctor Bellerín",'DEF',5,2],["BET","Diego Llorente",'DEF',6,3],["BET","Natan",'DEF',6,4],["BET","Marc Bartra",'DEF',5,5],["BET","Fran García",'DEF',6,11],["BET","Valentín Gómez",'DEF',6,16],["BET","Junior Firpo",'DEF',6,19],["BET","Ángel Ortiz",'DEF',5,40],["BET","Facundo Bernal",'CEN',5,6],["BET","Pablo Fornals",'CEN',7,8],["BET","Iker Losada",'CEN',5,14],["BET","Álvaro Fidalgo",'CEN',7,15],["BET","Nelson Deossa",'CEN',6,18],["BET","Giovani Lo Celso",'CEN',7,20],["BET","Marc Roca",'CEN',6,21],["BET","Isco",'CEN',7,22],["BET","Antony",'DEL',8,7],["BET","Cucho Hernández",'DEL',7,9],["BET","Abde Ezzalzouli",'DEL',7,10],["BET","Rodrigo Riquelme",'DEL',6,17],["BET","Aitor Ruibal",'DEL',5,24],["BET","Pablo García",'DEL',4,52],
+    // RSO
+    ["RSO","Álex Remiro",'POR',7,1],["RSO","Unai Marrero",'POR',4,13],["RSO","Jon Aramburu",'DEF',6,2],["RSO","Aihen Muñoz",'DEF',5,3],["RSO","Igor Zubeldia",'DEF',6,5],["RSO","Jon Pacheco",'DEF',6,16],["RSO","Sergio Gómez",'DEF',6,17],["RSO","Álvaro Odriozola",'DEF',5,20],["RSO","Jon Gorrotxategi",'CEN',6,4],["RSO","Beñat Turrientes",'CEN',6,8],["RSO","Wesley Ochieng",'CEN',5,12],["RSO","Pablo Marín",'CEN',6,15],["RSO","Carlos Soler",'CEN',7,18],["RSO","Yangel Herrera",'CEN',6,21],["RSO","Jon Ander Goti",'CEN',5,22],["RSO","Arsen Zakharyan",'CEN',6,23],["RSO","Luka Sučić",'CEN',7,24],["RSO","Ander Barrenetxea",'DEL',6,7],["RSO","Orri Óskarsson",'DEL',6,9],["RSO","Mikel Oyarzabal",'DEL',8,10],["RSO","Gonçalo Guedes",'DEL',6,11],["RSO","Take Kubo",'DEL',7,14],["RSO","Jon Karrikaburu",'DEL',4,null],
+    // CEL
+    ["CEL","Altay Bayındır",'POR',6,1],["CEL","Ionuț Radu",'POR',5,13],["CEL","Iván Villar",'POR',4,25],["CEL","Carl Starfelt",'DEF',5,2],["CEL","Marcos Alonso",'DEF',6,3],["CEL","Mamadou Faye",'DEF',5,4],["CEL","Sergio Carreira",'DEF',5,5],["CEL","Álvaro Núñez",'DEF',5,15],["CEL","Javi Rueda",'DEF',5,17],["CEL","Yoel Lago",'DEF',5,18],["CEL","Javi Rodríguez",'DEF',5,20],["CEL","Sebastián Cáceres",'DEF',5,21],["CEL","Javi Galán",'DEF',5,22],["CEL","Ilaix Moriba",'CEN',6,6],["CEL","Miguel Román",'CEN',5,8],["CEL","Aleix Febas",'CEN',5,14],["CEL","Hugo González",'CEN',4,16],["CEL","Hugo Álvarez",'CEN',6,23],["CEL","Borja Iglesias",'DEL',7,7],["CEL","Ferran Jutglà",'DEL',6,9],["CEL","Iago Aspas",'DEL',6,10],["CEL","Pablo Durán",'DEL',5,11],["CEL","Williot Swedberg",'DEL',6,19],["CEL","Ilias Driouech",'DEL',5,24],
+    // SEV
+    ["SEV","Odysseas Vlachodimos",'POR',6,1],["SEV","Fran González",'POR',4,13],["SEV","Juan Iglesias",'DEF',5,2],["SEV","Julio Díaz",'DEF',4,3],["SEV","Kike Salas",'DEF',5,4],["SEV","Andrés Castrín",'DEF',5,5],["SEV","Joseph Sangante",'DEF',5,12],["SEV","Gabriel Suazo",'DEF',5,17],["SEV","Óscar Oso",'DEF',5,null],["SEV","José Ángel Carmona",'DEF',6,22],["SEV","Marcão",'DEF',6,23],["SEV","Lucien Agoumé",'CEN',5,6],["SEV","Peque Fernández",'CEN',6,10],["SEV","Jon Guridi",'CEN',6,18],["SEV","Diego Correia",'CEN',5,20],["SEV","Youssouf Fofana",'CEN',6,24],["SEV","Manuel Ángel",'CEN',4,26],["SEV","Alfon González",'DEL',6,7],["SEV","Robbie Ure",'DEL',5,9],["SEV","Rubén Vargas",'DEL',6,11],["SEV","Isaac Romero",'DEL',6,16],["SEV","Stassin",'DEL',6,19],["SEV","Chidera Ejuke",'DEL',6,21],
+    // VAL
+    ["VAL","Stole Dimitrievski",'POR',6,1],["VAL","Cristian Rivero",'POR',4,13],["VAL","Kayne van Oevelen",'POR',3,25],["VAL","José Copete",'DEF',5,3],["VAL","Mouctar Diakhaby",'DEF',5,4],["VAL","César Tárrega",'DEF',6,5],["VAL","Nick de Haas",'DEF',4,12],["VAL","José Luis Gayà",'DEF',6,14],["VAL","Dimitri Foulquier",'DEF',5,20],["VAL","Jesús Vázquez",'DEF',5,21],["VAL","Guido Rodríguez",'CEN',6,2],["VAL","Javi Guerra",'CEN',7,8],["VAL","André Almeida",'CEN',6,10],["VAL","Dieng",'CEN',5,15],["VAL","Pepelu",'CEN',6,18],["VAL","Filip Ugrinić",'CEN',5,23],["VAL","Umar Sadiq",'DEL',5,6],["VAL","Arnaut Danjuma",'DEL',6,7],["VAL","Hugo Duro",'DEL',7,9],["VAL","Luis Rioja",'DEL',6,11],["VAL","Diego López",'DEL',7,16],["VAL","Dani Raba",'DEL',5,19],
+    // OSA
+    ["OSA","Sergio Herrera",'POR',6,1],["OSA","Aitor Fernández",'POR',5,13],["OSA","Jorge Herrando",'DEF',5,5],["OSA","Rico",'DEF',4,15],["OSA","Valentin Rosier",'DEF',5,19],["OSA","Flavien Boyomo",'DEF',6,22],["OSA","Abel Bretones",'DEF',5,23],["OSA","Alejandro Catena",'DEF',6,24],["OSA","Iker Arguibide",'DEF',4,27],["OSA","Lucas Torró",'CEN',5,6],["OSA","Jon Moncayola",'CEN',6,7],["OSA","Iker Muñoz",'CEN',5,8],["OSA","Aimar Oroz",'CEN',6,10],["OSA","Moi Gómez",'CEN',5,16],["OSA","Mauro Echegoyen",'CEN',4,26],["OSA","Asier Osambela",'CEN',4,29],["OSA","Raúl García de Haro",'DEL',6,9],["OSA","Kike Barja",'DEL',5,11],["OSA","Rubén García",'DEL',6,14],["OSA","Ante Budimir",'DEL',7,17],["OSA","Raúl Moro",'DEL',5,18],["OSA","Del Castillo",'DEL',5,20],["OSA","Adrián Dubasin",'DEL',5,21],["OSA","Rockson",'DEL',4,48],
+    // GET
+    ["GET","Jiří Letáček",'POR',5,1],["GET","David Soria",'POR',6,13],["GET","Diego Ferrer",'POR',3,35],["GET","Djené",'DEF',6,2],["GET","Davinchi",'DEF',5,3],["GET","Saba Sazonov",'DEF',5,4],["GET","Abdelkabir Abqar",'DEF',5,5],["GET","Sebastián Boselli",'DEF',5,15],["GET","Kiko Femenía",'DEF',4,17],["GET","Andrés García",'DEF',4,21],["GET","Johan Mojica",'DEF',5,22],["GET","Zaid Romero",'DEF',5,24],["GET","Mario Martín",'CEN',6,6],["GET","Nemanja Gudelj",'CEN',5,8],["GET","Javi Muñoz",'CEN',5,14],["GET","Francho Serrano",'CEN',5,16],["GET","Orel Mangala",'CEN',5,23],["GET","Alberto Risco",'CEN',4,28],["GET","Juanmi",'DEL',5,7],["GET","Borja Mayoral",'DEL',6,9],["GET","Martín Satriano",'DEL',5,10],["GET","Álex San Cristóbal",'DEL',4,18],["GET","Enes Ünal",'DEL',6,19],
+    // RAY
+    ["RAY","Dani Cárdenas",'POR',4,1],["RAY","Augusto Batalla",'POR',7,13],["RAY","Andrei Rațiu",'DEF',6,2],["RAY","Marash Kumbulla",'DEF',6,3],["RAY","Iván Balliu",'DEF',5,20],["RAY","Pep Chavarría",'DEF',5,23],["RAY","Pacha Espino",'DEF',5,21],["RAY","Javi Pedrosa",'DEF',5,17],["RAY","Pelayo Fernández",'DEF',4,22],["RAY","Florian Lejeune",'DEF',6,24],["RAY","Pathé Ciss",'CEN',6,6],["RAY","Unai López",'CEN',5,17],["RAY","Óscar Valentín",'CEN',5,23],["RAY","Isi Palazón",'CEN',7,7],["RAY","Óscar Trejo",'CEN',5,8],["RAY","Gerard Gumbau",'CEN',5,15],["RAY","Jorge de Frutos",'DEL',6,19],["RAY","Álvaro García",'DEL',6,18],["RAY","Alemão",'DEL',6,9],["RAY","Sergio Camello",'DEL',5,10],["RAY","Fran Pérez",'DEL',5,11],["RAY","Randy Nteka",'DEL',5,null],
+    // ESP
+    ["ESP","Ángel Fortuño",'POR',4,1],["ESP","Marko Dmitrović",'POR',6,13],["ESP","Rubén Sánchez",'DEF',5,2],["ESP","Quilindschy Hartman",'DEF',5,3],["ESP","Urko González",'DEF',5,4],["ESP","Clemens Riedel",'DEF',5,5],["ESP","Leandro Cabrera",'DEF',5,6],["ESP","Miguel Rubio",'DEF',5,15],["ESP","Andrija Drkušić",'DEF',5,16],["ESP","Omar El Hilali",'DEF',5,23],["ESP","Edu Expósito",'CEN',6,8],["ESP","Pol Lozano",'CEN',5,10],["ESP","Gabriel Moscardo",'CEN',5,20],["ESP","Javi Puado",'DEL',6,7],["ESP","Roberto Fernández",'DEL',6,9],["ESP","Pere Milla",'DEL',5,11],["ESP","Kike García",'DEL',6,19],["ESP","Tyrhys Dolan",'DEL',6,24],
+    // ALA
+    ["ALA","Antonio Sivera",'POR',6,1],["ALA","Adrián Rodríguez",'POR',4,13],["ALA","Raúl Owono",'POR',4,25],["ALA","Nicolás Valentini",'DEF',5,2],["ALA","Youssef Enríquez",'DEF',5,3],["ALA","Facundo Garcés",'DEF',5,5],["ALA","Ángel Pérez",'DEF',5,7],["ALA","Hugo Novoa",'DEF',5,12],["ALA","Nahuel Tenaglia",'DEF',5,14],["ALA","Ville Koski",'DEF',5,16],["ALA","Jonny Otto",'DEF',5,17],["ALA","Mikel Rodríguez",'DEF',4,18],["ALA","Moussa Diarra",'DEF',5,24],["ALA","Denis Suárez",'CEN',6,4],["ALA","Ander Guevara",'CEN',5,6],["ALA","Antonio Blanco",'CEN',6,8],["ALA","Carles Aleñá",'CEN',5,10],["ALA","Pablo Ibáñez",'CEN',5,19],["ALA","Abde Rebbach",'CEN',5,21],["ALA","Carlos Protesoni",'CEN',5,23],["ALA","Mariano Díaz",'DEL',5,9],["ALA","Toni Martínez",'DEL',6,11],["ALA","Lucas Boyé",'DEL',6,15],["ALA","Mañas",'DEL',4,20],
+    // ELC
+    ["ELC","Matías Dituro",'POR',5,1],["ELC","Alejandro Iturbe",'POR',4,43],["ELC","Buba Sangaré",'DEF',4,2],["ELC","Pedro Bigas",'DEF',5,6],["ELC","Víctor Chust",'DEF',5,23],["ELC","Matia Barzic",'DEF',4,26],["ELC","David Affengruber",'DEF',6,22],["ELC","Josan",'DEF',5,17],["ELC","Federico Redondo",'CEN',5,5],["ELC","Marc Aguado",'CEN',5,8],["ELC","Facundo Buonanotte",'CEN',6,10],["ELC","Gonzalo Villar",'CEN',5,12],["ELC","Martim Neto",'CEN',5,16],["ELC","Grady Diangana",'DEL',5,19],["ELC","Lucas Cepeda",'DEL',5,21],["ELC","Ezequiel Ponce",'DEL',5,9],["ELC","Fer Niño",'DEL',5,14],["ELC","Tete Morente",'DEL',5,20],["ELC","Rafa Mir",'DEL',6,7],
+    // LEV
+    ["LEV","Pablo Cuñat",'POR',4,1],["LEV","Mathew Ryan",'POR',5,13],["LEV","Aïssa Mandi",'DEF',5,2],["LEV","Ndukwe",'DEF',4,3],["LEV","Adrián de la Fuente",'DEF',5,4],["LEV","Requena",'DEF',4,6],["LEV","Cabello",'DEF',4,14],["LEV","Jeremy Toljan",'DEF',5,22],["LEV","Manu Sánchez",'DEF',5,23],["LEV","Hugo Sotelo",'CEN',5,5],["LEV","Unai Olasagasti",'CEN',5,8],["LEV","Axel Tape",'CEN',5,16],["LEV","Bardeli",'CEN',4,18],["LEV","Oriol Rey",'CEN',5,20],["LEV","Thiago",'CEN',4,24],["LEV","Roger Brugué",'DEL',5,7],["LEV","Iván Romero",'DEL',6,9],["LEV","Petar Ratkov",'DEL',6,10],["LEV","Musuayi",'DEL',4,11],["LEV","Víctor García",'DEL',5,17],["LEV","Karl Etta Eyong",'DEL',6,21],
+    // RAC
+    ["RAC","Julen Agirrezabala",'POR',5,1],["RAC","Simon Eriksson",'POR',4,13],["RAC","Aitor Crespo",'POR',3,37],["RAC","Álvaro Mantilla",'DEF',5,2],["RAC","Manu Hernando",'DEF',5,4],["RAC","Aarón Martín",'DEF',5,3],["RAC","Pablo Ramón",'DEF',5,5],["RAC","Facundo González",'DEF',5,15],["RAC","Jorge Salinas",'DEF',4,32],["RAC","Carlos Sánchez",'DEF',4,46],["RAC","Íñigo Sainz-Maza",'CEN',5,6],["RAC","Maguette Gueye",'CEN',5,14],["RAC","Gustavo Puerta",'CEN',5,19],["RAC","Sergio Martínez",'CEN',4,36],["RAC","Sergio Canales",'CEN',6,8],["RAC","Andrés Martín",'DEL',6,11],["RAC","Juan Carlos Arana",'DEL',5,9],["RAC","Giorgi Guliashvili",'DEL',5,7],["RAC","Iñigo Vicente",'DEL',6,10],["RAC","Asier Villalibre",'DEL',5,12],
+    // DEP
+    ["DEP","Germán Parreño",'POR',5,1],["DEP","Leo Román",'POR',5,13],["DEP","Adrià Altimira",'DEF',5,2],["DEP","Arnau Comas",'DEF',5,3],["DEP","Lucas Noubi",'DEF',4,4],["DEP","Dani Barcia",'DEF',5,5],["DEP","Giacomo Quagliata",'DEF',5,12],["DEP","Miguel Loureiro",'DEF',5,15],["DEP","Angeliño",'DEF',6,17],["DEP","José María Giménez",'DEF',6,20],["DEP","Ximo Navarro",'DEF',5,23],["DEP","Marc Casadó",'CEN',6,6],["DEP","Diego Villares",'CEN',5,8],["DEP","Riki Rodríguez",'CEN',5,14],["DEP","Lorenzo Amatucci",'CEN',5,16],["DEP","Jonathan Asp Jensen",'CEN',5,18],["DEP","Mario Soriano",'CEN',6,21],["DEP","Pierre-Emerick Aubameyang",'DEL',6,7],["DEP","Zakaria Eddahchouri",'DEL',6,9],["DEP","Yeremay Hernández",'DEL',7,10],["DEP","David Mella",'DEL',6,11],["DEP","Luismi Cruz",'DEL',5,19],["DEP","Bright Ede",'DEL',4,22],["DEP","Adama Traoré",'DEL',6,24],
+    // MAL
+    ["MAL","Alfonso Herrero",'POR',5,1],["MAL","Carlos López",'POR',4,13],["MAL","Carlos Puga",'DEF',5,3],["MAL","Einar Galilea",'DEF',5,4],["MAL","Pastor",'DEF',4,5],["MAL","José Salinas",'DEF',4,12],["MAL","Recio",'DEF',4,15],["MAL","Murillo",'DEF',5,16],["MAL","Fernando Calero",'DEF',5,20],["MAL","Dani Sánchez",'DEF',4,null],["MAL","Ramón Enríquez",'CEN',5,6],["MAL","Dotor",'CEN',5,8],["MAL","David Larrubia",'CEN',6,10],["MAL","Rafa Rodríguez",'CEN',5,14],["MAL","Juan Cruz",'CEN',5,19],["MAL","Dani Lorenzo",'CEN',5,22],["MAL","Izan Merino",'CEN',5,23],["MAL","Haitam Abaida",'DEL',5,7],["MAL","Chupe",'DEL',6,9],["MAL","Joaquín Muñoz",'DEL',6,11],["MAL","Jáuregi",'DEL',5,17],["MAL","Adrián Niño",'DEL',5,21],["MAL","Antoñito Lobete",'DEL',5,24]
   ];
 
   /* ---------- Estado médico/disciplinario de referencia ---------- */
   const STATUS = {
-    'Carvajal': 'doubtful', 'Araujo': 'injured', 'Gavi': 'doubtful', 'Giménez': 'injured',
-    'Laporte': 'doubtful', 'Isco': 'injured', 'Gerard Moreno': 'injured', 'Iago Aspas': 'doubtful',
-    'Azpilicueta': 'suspended', 'Arnaut Danjuma': 'doubtful', 'Djené': 'suspended', 'Rubén García': 'doubtful',
-    'Rodrygo': 'doubtful', 'Kike García': 'injured', 'Mantilla': 'suspended'
+    'Éder Militão': 'injured', 'Gavi': 'doubtful', 'Aymeric Laporte': 'doubtful', 'Isco': 'injured',
+    'Gerard Moreno': 'injured', 'Iago Aspas': 'doubtful', 'Antonio Rüdiger': 'injured', 'Andreas Christensen': 'doubtful',
+    'Take Kubo': 'doubtful', 'Djené': 'suspended', 'Marcos Alonso': 'suspended', 'Rubén García': 'doubtful',
+    'Kike García': 'injured', 'Álvaro Mantilla': 'suspended', 'Arnaut Danjuma': 'doubtful'
   };
 
   /* ---------- Utilidades deterministas ---------- */
@@ -139,13 +118,19 @@
 
   /* ---------- Jugadores ---------- */
   const TEAM = Object.fromEntries(TEAMS.map(t => [t.id, t]));
-  const PLAYERS = RAW.map(([team, name, pos, q]) => ({
-    id: team.toLowerCase() + '-' + slug(name), team, name, pos, q,
+  const PLAYERS = RAW.map(([team, name, pos, q, num]) => ({
+    id: team.toLowerCase() + '-' + slug(name), team, name, pos, q, num,
     status: STATUS[name] || 'ok'
   }));
-  // El primer portero de cada equipo es el titular
+  // Portero titular: el de más nivel (a igualdad, el primero de la lista)
   const GK_STARTER = {};
-  PLAYERS.forEach(p => { if (p.pos === 'POR' && !GK_STARTER[p.team]) GK_STARTER[p.team] = p.id; });
+  PLAYERS.forEach(p => { if (p.pos === 'POR' && (!GK_STARTER[p.team] || p.q > PLAYERS.find(x => x.id === GK_STARTER[p.team]).q)) GK_STARTER[p.team] = p.id; });
+  // Orden en la rotación de cada línea (0 = primer titular)
+  const STARTERS = { POR: 1, DEF: 4, CEN: 3, DEL: 3 };
+  const DEPTH = {};
+  TEAMS.forEach(t => ['DEF', 'CEN', 'DEL'].forEach(pos => {
+    PLAYERS.filter(p => p.team === t.id && p.pos === pos).sort((a, b) => b.q - a.q).forEach((p, i) => { DEPTH[p.id] = i; });
+  }));
 
   /* ---------- Calendario: 38 jornadas, doble vuelta ---------- */
   const SEASON_SEED = hash('laliga-2026-27');
@@ -211,7 +196,10 @@
           // los lesionados/sancionados actuales no jugaron la última jornada
           if (p.status !== 'ok' && p.status !== 'doubtful' && j >= lastJ) return false;
           if (p.pos === 'POR') return GK_STARTER[team] === p.id;
-          return r() < Math.min(0.97, 0.3 + p.q * 0.075);
+          // titulares habituales casi siempre; el resto según su lugar en la rotación
+          const d = DEPTH[p.id];
+          const prob = d < STARTERS[p.pos] ? 0.93 : d < STARTERS[p.pos] + 2 ? 0.42 : 0.12;
+          return r() < prob;
         });
         const st = {};
         playing.forEach(p => {
@@ -253,6 +241,6 @@
 
   global.FantasyDB = {
     TEAMS, TEAM, PLAYERS, ROUNDS, DATES, GK_STARTER,
-    playedJornadas, simulateJornada, baseValue, hash, rng, slug
+    playedJornadas, simulateJornada, baseValue, hash, rng, slug, DEPTH, STARTERS
   };
 })(window);
