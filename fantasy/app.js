@@ -851,8 +851,8 @@
   /* ---------------- Datos oficiales (generados por sincronizar.py) ---------------- */
   const POS_OK = new Set(POS), ST_OK = new Set(Object.keys(STATUS_TXT));
   const words = s => norm(s).split(/[\s.\-']+/).filter(w => w.length > 1);
-  function matchLocal(o, used) {
-    const cands = DB.PLAYERS.filter(p => p.team === o.team && !used.has(p.id));
+  function matchLocal(o, used, pool) {
+    const cands = (pool || DB.PLAYERS).filter(p => (!o.team || p.team === o.team) && !used.has(p.id));
     const nn = norm(o.nick), nf = norm(o.name || o.nick);
     let c = cands.filter(p => { const n = norm(p.name); return n === nn || n === nf; });
     if (c.length !== 1) c = cands.filter(p => { const n = norm(p.name); return (' ' + nf + ' ').includes(' ' + n + ' ') || (' ' + n + ' ').includes(' ' + nn + ' '); });
@@ -946,7 +946,7 @@
 
   function ligaHelp(first) {
     return `<section class="panel" style="display:grid;gap:14px">
-      <div class="panel-head" style="margin:0"><div><h2 class="panel-title">${first ? 'Conecta tu liga privada' : 'Actualizar los datos de tu liga'}</h2>
+      <div class="panel-head" style="margin:0"><div><span class="eyebrow">Opción avanzada</span><h2 class="panel-title">Con el programa y tu token</h2>
         <div class="panel-sub">Mercado del día, plantillas de tus rivales, cláusulas y saldo. Se descargan con tu sesión, solo en tu ordenador.</div></div></div>
       <ol class="steps">
         <li>En el ordenador, entra en la <b>web de LaLiga Fantasy</b> con Chrome o Edge (no en la app del móvil) e inicia sesión.</li>
@@ -964,7 +964,7 @@
 
   function viewLiga() {
     const L = state.league;
-    if (!L || !L.leagues || !L.leagues.length) return ligaHelp(true);
+    if (!L || !L.leagues || !L.leagues.length) return capturePanel() + ligaHelp(true);
     const lg = L.leagues.find(l => l.id === state.leagueSel) || L.leagues[0];
     const mine = (state.myTeam || {})[lg.id];
     const market = (lg.market || []).map(m => ({ m, p: BY[m.id] })).filter(x => x.p)
@@ -985,7 +985,7 @@
     const myT = teams.find(t => t.id === mine);
     const diff = (a, b) => { const d = (a - b) / Math.max(0.1, b) * 100; return Math.abs(d) < 1 ? '<span class="muted">=</span>' : `<span class="${d > 0 ? 'delta-down' : 'delta-up'}">${d > 0 ? '+' : ''}${f0(d)}%</span>`; };
 
-    return `
+    return capturePanel() + `
     <section class="panel">
       <div class="panel-head" style="margin:0">
         <div><span class="eyebrow">Liga privada</span><h2 class="hero-title" style="font-size:clamp(26px,4vw,40px)">${esc(lg.name)}</h2>
@@ -1036,6 +1036,164 @@
           <div style="min-width:0">${pcell(x.p)}<div class="pmeta" style="margin-top:2px">de ${esc(x.t.manager)} · cláusula <b>${money(x.pl.clause)}</b> · ${f1(x.x3)} xP en 3J</div></div>
           <span class="xp">${f1(x.ppm)}</span></div>`).join('') || '<p class="muted" style="margin:0">No hay cláusulas libres interesantes ahora mismo.</p>'}</div>
       </div>
+    </section>`;
+  }
+
+
+  /* ---------------- Sincronizar con capturas (Claude lee las imágenes) ---------------- */
+  let sampleFn = null, sampleImg = null, sampleState = 'loading', shotCtl = null, shotPending = null;
+  (async () => {
+    try {
+      if (!window.claude || typeof window.claude.use !== 'function') { sampleState = 'outside'; return; }
+      const s = await window.claude.use('sample');
+      if (s) {
+        sampleFn = s;
+        const lim = await s.limits().catch(() => null);
+        sampleImg = lim && lim.images ? lim.images : null;
+      }
+      sampleState = sampleFn && sampleImg ? 'ready' : 'none';
+    } catch (e) { sampleState = 'none'; }
+    if (state.tab === 'liga') render();
+  })();
+
+  const SHOT_PROMPT = () => `Estas imágenes son capturas de pantalla de la app LaLiga Fantasy (temporada 2026/27) de un usuario y su liga privada con amigos. Para CADA imagen, en el mismo orden, extrae lo que se ve.
+Tipos de pantalla: "mercado" (jugadores a la venta, con precio), "plantilla" (jugadores de un mánager, con valor y/o cláusula), "otro" (cualquier otra cosa).
+Códigos de equipo: ${DB.TEAMS.map(t => t.id + '=' + t.name).join(', ')}.
+Importes en millones de euros como número con decimales (12.345.678 € -> 12.35; 850.000 € -> 0.85).
+Responde SOLO con un array JSON, un objeto por imagen, así:
+[{"kind":"mercado","manager":null,"mine":false,"money":null,"points":null,"players":[{"name":"Pedri","team":"BAR","pos":"CEN","value":45.2,"price":47.0,"clause":null,"seller":"Mercado","bids":2}]}]
+Reglas: name tal como aparece; team con el código (deduce el club por el escudo o el texto); pos POR/DEF/CEN/DEL si se ve, si no null; value = valor de mercado; price = precio de venta en el mercado; clause = cláusula de rescisión; seller = quién lo vende ("Mercado" si es la liga); manager = dueño de la plantilla si aparece; mine = true si es el equipo del propio usuario ("Mi equipo", "Mi plantilla", "Alineación"); money = saldo si aparece; points = puntos totales del mánager si aparecen. No inventes nada: null en lo que no se vea.`;
+
+  function findByName(name, team) {
+    const o = { nick: String(name || ''), name: String(name || ''), team: DB.TEAM[team] ? team : null };
+    if (!o.nick.trim()) return null;
+    let p = o.team ? matchLocal(o, new Set(), ALL) : null;
+    if (!p) { const r = searchPlayers(o.nick, 2); if (r.total === 1 || (r.list[0] && norm(r.list[0].name) === norm(o.nick))) p = r.list[0]; }
+    return p || null;
+  }
+  const num = v => (v === null || v === undefined || v === '' || !isFinite(Number(v)) ? null : Number(v));
+
+  async function readShots(files) {
+    const msg = $('#shot-msg');
+    const say = t => { const m = $('#shot-msg'); if (m) m.textContent = t; };
+    if (!sampleFn || !sampleImg) { say('Esta función solo funciona en la web publicada en claude.ai.'); return; }
+    const imgs = Array.from(files).filter(f => sampleImg.mediaTypes.includes(f.type));
+    if (!imgs.length) { say('Elige imágenes (PNG o JPG).'); return; }
+    const screens = [];
+    shotCtl = new AbortController();
+    $('#shot-stop').hidden = false;
+    try {
+      for (let i = 0; i < imgs.length; i += sampleImg.maxCount) {
+        const chunk = imgs.slice(i, i + sampleImg.maxCount);
+        say(`Leyendo ${chunk.length === imgs.length ? chunk.length : `${i + 1}-${i + chunk.length} de ${imgs.length}`} captura(s)… puede tardar hasta un minuto.`);
+        const res = await sampleFn.json(SHOT_PROMPT(), { images: chunk, signal: shotCtl.signal });
+        (Array.isArray(res) ? res : [res]).forEach(sc => { if (sc && typeof sc === 'object') screens.push(sc); });
+      }
+    } catch (e) {
+      const copy = {
+        cancelled: 'Lectura cancelada.', not_granted: 'Para leer capturas tienes que permitir que la página use Claude.',
+        rate_limited: 'Demasiadas lecturas seguidas o límite de uso alcanzado. Prueba en un rato.',
+        image_rejected: 'Alguna imagen no se ha podido leer. Prueba con otra captura (PNG o JPG).',
+        invalid_json: 'No he entendido bien las capturas. Vuelve a intentarlo o súbelas de una en una.',
+        refused: 'No se han podido leer esas imágenes.'
+      };
+      say(copy[e && e.code] || 'Ha fallado la lectura. Vuelve a intentarlo.');
+      const st = $('#shot-stop'); if (st) st.hidden = true;
+      if (!screens.length) return;
+    }
+    const st = $('#shot-stop'); if (st) st.hidden = true;
+    shotPending = screens.map(sc => ({
+      kind: ['mercado', 'plantilla'].includes(sc.kind) ? sc.kind : 'otro',
+      manager: sc.manager ? String(sc.manager) : null, mine: !!sc.mine,
+      money: num(sc.money), points: num(sc.points),
+      rows: (Array.isArray(sc.players) ? sc.players : []).map(r => {
+        const p = findByName(r.name, r.team);
+        return { read: String(r.name || '?'), team: r.team, id: p ? p.id : null, value: num(r.value), price: num(r.price), clause: num(r.clause), seller: r.seller ? String(r.seller) : null, bids: num(r.bids) || 0 };
+      })
+    })).filter(sc => sc.kind !== 'otro' && sc.rows.length);
+    say(shotPending.length ? 'Revisa lo que he leído y pulsa «Guardar».' : 'No he encontrado ni mercado ni plantillas en esas capturas.');
+    const box = $('#shot-review'); if (box) box.innerHTML = shotReviewHtml();
+  }
+
+  function shotReviewHtml() {
+    if (!shotPending || !shotPending.length) return '';
+    const ok = shotPending.reduce((a, sc) => a + sc.rows.filter(r => r.id).length, 0);
+    const all = shotPending.reduce((a, sc) => a + sc.rows.length, 0);
+    return `<div class="shot-review">${shotPending.map((sc, si) => `
+      <div class="shot-screen"><div class="panel-head" style="margin:0 0 6px">
+        <b>${sc.kind === 'mercado' ? 'Mercado' : `Plantilla${sc.manager ? ' de ' + esc(sc.manager) : ''}${sc.mine ? ' (tu equipo)' : ''}`}</b>
+        <span class="muted" style="font-size:12px">${sc.rows.length} jugadores${sc.money !== null ? ` · saldo ${money(sc.money)}` : ''}</span></div>
+        ${sc.kind === 'plantilla' && !sc.mine ? `<label class="field" style="max-width:260px">Mánager<input class="input shot-manager" data-si="${si}" value="${esc(sc.manager || '')}" placeholder="Nombre de tu amigo"></label>` : ''}
+        <div class="table-wrap" style="margin:0;padding:0"><table class="t"><tbody>${sc.rows.map(r => {
+          const p = r.id && BY[r.id];
+          return `<tr><td>${p ? pcell(p) : `<span class="status st-injured">No reconocido</span> ${esc(r.read)}`}</td>
+            <td class="r num">${r.value !== null ? 'valor ' + money(r.value) : ''}</td>
+            <td class="r num">${r.price !== null ? '<b>' + money(r.price) + '</b>' : r.clause !== null ? 'cláusula ' + money(r.clause) : ''}</td>
+            <td class="muted">${r.seller ? esc(r.seller) : ''}</td></tr>`;
+        }).join('')}</tbody></table></div></div>`).join('')}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" data-action="shots-save">Guardar ${ok} de ${all} jugadores</button>
+        <button class="btn btn-ghost" data-action="shots-cancel">Descartar</button>
+        ${ok < all ? '<span class="muted" style="font-size:13px">Los no reconocidos se ignoran; si falta alguno, añádelo en Datos.</span>' : ''}</div></div>`;
+  }
+
+  function saveShots() {
+    if (!shotPending) return;
+    $$('.shot-manager').forEach(inp => { const sc = shotPending[Number(inp.dataset.si)]; if (sc) sc.manager = inp.value.trim() || sc.manager; });
+    if (!state.league || !state.league.leagues || !state.league.leagues.length) {
+      state.league = { source: 'manual', leagues: [{ id: 'manual', name: 'Mi liga', market: [], teams: [] }] };
+      state.leagueSel = 'manual';
+    }
+    const lg = state.league.leagues.find(l => l.id === state.leagueSel) || state.league.leagues[0];
+    lg.market = lg.market || []; lg.teams = lg.teams || [];
+    const toRow = r => { const p = BY[r.id]; return { id: r.id, nick: p.name, team: p.team, pos: p.pos, value: r.value !== null ? r.value : metrics(p).value, price: r.price, clause: r.clause, seller: r.seller || 'Mercado', bids: r.bids, expires: null, clauseLockEnd: null }; };
+    const marketRows = shotPending.filter(sc => sc.kind === 'mercado').flatMap(sc => sc.rows.filter(r => r.id).map(r => Object.assign(r, { price: r.price !== null ? r.price : r.value })).filter(r => r.price !== null));
+    if (marketRows.length) {
+      const seen = new Set();
+      lg.market = marketRows.filter(r => !seen.has(r.id) && seen.add(r.id)).map(toRow);
+    }
+    shotPending.filter(sc => sc.kind === 'plantilla').forEach(sc => {
+      const rows = sc.rows.filter(r => r.id);
+      if (!rows.length) return;
+      const mgr = sc.mine ? (sc.manager || 'Yo') : (sc.manager || 'Rival ' + (lg.teams.length + 1));
+      let t = lg.teams.find(x => (sc.mine && x.id === (state.myTeam || {})[lg.id]) || norm(x.manager) === norm(mgr));
+      if (!t) { t = { id: 'm-' + DB.slug(mgr) + '-' + Date.now().toString(36), manager: mgr, position: lg.teams.length + 1, points: 0, value: 0, money: null, players: [] }; lg.teams.push(t); }
+      const prev = Object.fromEntries((t.players || []).map(p => [p.id, p]));
+      t.players = rows.map(r => Object.assign({}, prev[r.id] || {}, toRow(r), { clause: r.clause !== null ? r.clause : (prev[r.id] ? prev[r.id].clause : null) }));
+      if (sc.points !== null) t.points = sc.points;
+      if (sc.money !== null) t.money = sc.money;
+      t.value = sum(t.players, p => p.value);
+      if (sc.mine) {
+        state.myTeam = Object.assign({}, state.myTeam, { [lg.id]: t.id });
+        state.squad = [...new Set(t.players.map(p => p.id))].slice(0, MAX_SQUAD);
+        state.lineup = null; state.example = false;
+        if (t.money !== null) state.budget = t.money;
+      }
+    });
+    lg.teams.sort((a, b) => b.points - a.points).forEach((t, i) => { t.position = i + 1; });
+    // Los valores que se ven en las capturas son los oficiales de hoy
+    shotPending.forEach(sc => sc.rows.forEach(r => { if (r.id && r.value) state.valueOv[r.id] = r.value; }));
+    state.league.fetchedAt = new Date().toISOString();
+    shotPending = null;
+    memo.clear(); save(); render();
+    toast('Capturas guardadas en Mi liga');
+  }
+
+  function capturePanel() {
+    const can = sampleFn && sampleImg;
+    return `<section class="panel capture">
+      <div class="capture-text">
+        <span class="eyebrow">Lo más fácil · sin token</span>
+        <h2 class="panel-title">Sincronizar con capturas</h2>
+        <p class="panel-sub" style="margin:4px 0 0">En la app de LaLiga Fantasy haz capturas del <b>Mercado</b>, de <b>tu equipo</b> y de los <b>equipos de tus amigos</b> (con las cláusulas). Súbelas aquí todas a la vez: Claude las lee y rellena el mercado, los precios, las cláusulas y tu saldo.</p>
+      </div>
+      <div class="capture-actions">
+        ${can ? `<label class="btn btn-primary" style="cursor:pointer">Subir capturas<input id="shots" type="file" accept="${sampleImg.mediaTypes.join(',')}" multiple hidden></label>
+          <button id="shot-stop" class="btn btn-ghost" data-action="shots-stop" hidden>Parar</button>`
+        : `<span class="muted" style="font-size:13px">${{ outside: 'Abre la web publicada en claude.ai para usar esta función.', none: 'Aquí no se pueden leer imágenes. Ábrela en claude.ai con tu cuenta.', loading: 'Preparando…' }[sampleState] || ''}</span>`}
+        <span id="shot-msg" class="muted" style="font-size:13px">${can ? 'Usa tu cuenta de Claude; la primera vez te pedirá permiso.' : ''}</span>
+      </div>
+      <div id="shot-review" style="grid-column:1/-1">${shotReviewHtml()}</div>
     </section>`;
   }
 
@@ -1198,6 +1356,9 @@
         if (j >= 0 && j !== i) xi[j] = xi[i];
         xi[i] = pid; state.lineup = xi; dlg.close(); render(); break;
       }
+      case 'shots-stop': if (shotCtl) shotCtl.abort(); break;
+      case 'shots-cancel': shotPending = null; { const b = $('#shot-review'); if (b) b.innerHTML = ''; } break;
+      case 'shots-save': saveShots(); break;
       case 'league-sel': state.leagueSel = id; render(); break;
       case 'my-team': {
         const lg = state.league.leagues.find(l => l.id === state.leagueSel) || state.league.leagues[0];
@@ -1288,6 +1449,7 @@
       if (!state.premium && FORMATIONS_PREM.includes(state.formation)) { state.formation = '4-3-3'; state.lineup = bestXI('4-3-3', state.squad); }
       render(); toast(state.premium ? 'Formaciones premium activadas' : 'Formaciones premium desactivadas');
     }
+    if (t.id === 'shots' && t.files.length) { readShots(t.files); t.value = ''; }
     if (t.id === 'league-file' && t.files[0]) {
       const r = new FileReader();
       r.onload = () => {
