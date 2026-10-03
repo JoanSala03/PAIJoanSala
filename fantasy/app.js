@@ -26,9 +26,13 @@
   const MAX_SQUAD = 24;
   const STORE = 'pizarra-fantasy-v2';
 
-  const PLAYED = DB.playedJornadas(new Date());
-  const NEXT = Math.min(38, PLAYED + 1);
-  const LAST = Math.max(1, PLAYED);
+  let PLAYED, NEXT, LAST;
+  function computeWeeks() {
+    PLAYED = DB.playedJornadas(new Date());
+    NEXT = Math.min(38, PLAYED + 1);
+    LAST = Math.max(1, PLAYED);
+  }
+  computeWeeks();
   const dateTxt = (iso, opts = { weekday: 'short', day: 'numeric', month: 'short' }) =>
     new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', opts).replace('.', '');
 
@@ -39,7 +43,7 @@
   /* ---------------- Estado ---------------- */
   const defaults = () => ({
     v: 2, squad: EXAMPLE.slice(), example: true, formation: '4-3-3', lineup: null, budget: 8.5,
-    overrides: {}, statusOv: {}, valueOv: {}, apiIds: {}, custom: [], tab: 'resumen', noticeHidden: false,
+    overrides: {}, statusOv: {}, valueOv: {}, posOv: {}, apiIds: {}, custom: [], official: null, officialFixtures: null, officialWeek: 0, tab: 'resumen', noticeHidden: false,
     market: { q: '', pos: 'ALL', team: 'ALL', max: '', sort: 'xp', dir: -1, limit: 40 },
     calOnlyMine: false, calJ: LAST, cmp: ['rma-kylian-mbappe', 'bar-lamine-yamal']
   });
@@ -56,7 +60,9 @@
   /* ---------------- Jugadores y métricas ---------------- */
   let ALL = [], BY = {};
   function rebuild() {
-    ALL = DB.PLAYERS.concat(state.custom.map(c => Object.assign({ custom: true }, c)));
+    const posOv = state.posOv || {};
+    ALL = DB.PLAYERS.map(p => (posOv[p.id] && posOv[p.id] !== p.pos ? Object.assign({}, p, { pos: posOv[p.id] }) : p))
+      .concat(state.custom.map(c => Object.assign({ custom: true }, c)));
     BY = Object.fromEntries(ALL.map(p => [p.id, p]));
     state.squad = state.squad.filter(id => BY[id]);
     memo.clear();
@@ -84,6 +90,8 @@
     const f = fixtureOf(p.team, j);
     const ov = state.overrides[p.id] && state.overrides[p.id][j];
     const s = p.custom ? null : DB.simulateJornada(j).stats[p.id];
+    if (ov === 'x') return { j, opp: f.opp, home: f.home, played: false, pts: 0, min: 0, g: 0, a: 0, manual: true };
+    if (Array.isArray(ov)) return { j, opp: f.opp, home: f.home, played: true, pts: Number(ov[0]) || 0, min: ov[1] || 0, g: ov[2] || 0, a: ov[3] || 0, cs: false, manual: true, official: true };
     if (ov !== undefined && ov !== null && ov !== '') return Object.assign({ min: 90, g: 0, a: 0 }, s || {}, { j, opp: f.opp, home: f.home, played: true, pts: Number(ov), manual: true });
     if (s) return s;
     return { j, opp: f.opp, home: f.home, played: false, pts: 0, min: 0, g: 0, a: 0 };
@@ -326,10 +334,12 @@
   }
   function noticeHtml() {
     if (state.noticeHidden) return '';
+    const off = state.official;
+    const body = off
+      ? `<b>Datos oficiales de LaLiga Fantasy</b> del ${new Date(off.fetchedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}: precios, posiciones, estado y puntos de ${off.players} jugadores. Vuelve a sincronizar después de cada jornada.`
+      : `<b>Resultados (J1–J7) y calendario (J8–J12) reales.</b> Los precios, posiciones y puntos por jugador son estimaciones hasta que cargues los datos oficiales de LaLiga Fantasy: <button class="link" data-action="open-data">cómo sincronizar</button>.`;
     return `<div class="notice" style="margin-bottom:20px"><svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 5v6M10 14v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <p><b>Modo demostración.</b> Equipos de LaLiga 2026/27 con plantillas de referencia; el calendario y las puntuaciones están simulados.
-      Corrige puntos en la ficha de cada jugador, añade los que te falten o importa datos reales desde <button class="link" data-action="open-data">Datos</button>.
-      ${state.example ? 'La plantilla cargada es un ejemplo: <button class="link" data-action="clear-squad-direct">empieza la tuya</button>.' : ''}</p>
+      <p>${body} ${state.example ? 'La plantilla cargada es un ejemplo: <button class="link" data-action="clear-squad-direct">empieza la tuya</button>.' : ''}</p>
       <button class="btn btn-sm btn-ghost" data-action="hide-notice" aria-label="Ocultar aviso">✕</button></div>`;
   }
 
@@ -519,12 +529,12 @@
     return `
     <section class="panel">
       <div class="panel-head">
-        <div><h2 class="panel-title">Dificultad de los próximos partidos</h2><div class="panel-sub">Jornadas ${js[0]}–${js[js.length - 1]} · equipos ordenados de calendario más fácil a más difícil</div></div>
+        <div><h2 class="panel-title">Dificultad de los próximos partidos</h2><div class="panel-sub">Jornadas ${js[0]}–${js[js.length - 1]} · equipos ordenados de calendario más fácil a más difícil${js.some(j => DB.ROUNDS[j - 1][0].prov) ? ' · las jornadas marcadas con * son provisionales' : ''}</div></div>
         <button class="chip" aria-pressed="${state.calOnlyMine}" data-action="cal-only-mine">Solo equipos de mi plantilla</button>
       </div>
       <div class="legend" style="margin-bottom:12px">${[1, 2, 3, 4, 5].map(n => `<span><i style="background:var(--fdr${n})"></i>${n} · ${FDR_TXT[n]}</span>`).join('')}</div>
       <div class="table-wrap"><table class="t fdr-table">
-        <thead><tr><th>Equipo</th>${js.map(j => `<th class="c">J${j}<div style="font-weight:500;letter-spacing:0;text-transform:none">${dateTxt(DB.DATES[j - 1], { day: 'numeric', month: 'short' })}</div></th>`).join('')}<th class="r">Media</th></tr></thead>
+        <thead><tr><th>Equipo</th>${js.map(j => `<th class="c">J${j}${DB.ROUNDS[j - 1][0].prov ? '*' : ''}<div style="font-weight:500;letter-spacing:0;text-transform:none">${dateTxt(DB.DATES[j - 1], { day: 'numeric', month: 'short' })}</div></th>`).join('')}<th class="r">Media</th></tr></thead>
         <tbody>${teams.map(({ t, avg, mine }) => `<tr class="${mine ? 'mine' : ''}">
           <td><span class="tname">${crest(t.id, true)}${esc(t.name)} ${mine ? `<span class="owncount" title="Jugadores en tu plantilla">${mine}</span>` : ''}</span></td>
           ${js.map(j => `<td class="c">${fdrChip(t.id, j)}</td>`).join('')}
@@ -539,7 +549,7 @@
       <div class="fixture-list" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))">${list.map(m => {
         const mine = myTeams.has(m.home) || myTeams.has(m.away);
         return `<div class="fixture${mine ? ' mine' : ''}"><div class="h"><span>${esc(team(m.home).name)}</span>${crest(m.home)}</div>
-          <span class="score${played ? '' : ' vs'}">${played ? `${m.hg} - ${m.ag}` : 'vs'}</span>
+          <span class="score${played && m.hg !== null ? '' : ' vs'}">${played ? (m.hg !== null ? `${m.hg} - ${m.ag}` : '–') : 'vs'}</span>
           <div class="a">${crest(m.away)}<span>${esc(team(m.away).name)}</span></div></div>`;
       }).join('')}</div>
     </section>`;
@@ -742,7 +752,7 @@
             <div style="display:flex;gap:6px;flex-wrap:wrap" id="edit-actions">${editActions()}</div></div>
           <div class="table-wrap" style="margin:0 -20px;padding:0 20px"><table class="t"><thead><tr><th>Jornada</th><th>Rival</th><th class="c">Res.</th><th class="r">Min</th><th class="r">G</th><th class="r">A</th><th class="c">P. cero</th><th class="c">Tarj.</th><th class="r">Puntos</th></tr></thead>
             <tbody>${m.hist.slice().reverse().map(h => { const r = matchResult(h.j, p.team); const gf = r ? (r.home === p.team ? r.hg : r.ag) : null, ga = r ? (r.home === p.team ? r.ag : r.hg) : null;
-              const res = r ? `<span class="${gf > ga ? 'delta-up' : gf < ga ? 'delta-down' : 'muted'}">${gf}-${ga}</span>` : '';
+              const res = r && r.hg !== null ? `<span class="${gf > ga ? 'delta-up' : gf < ga ? 'delta-down' : 'muted'}">${gf}-${ga}</span>` : '';
               return `<tr><td>J${h.j}</td><td><span class="pcell">${crest(h.opp)} ${h.home ? 'vs' : 'en'} ${esc(team(h.opp).name)}</span></td><td class="c num">${res}</td>
               <td class="r num">${h.played ? (h.min || 90) + '′' : '—'}</td><td class="r num">${h.played ? h.g || 0 : ''}</td><td class="r num">${h.played ? h.a || 0 : ''}</td>
               <td class="c">${h.cs ? '✓' : ''}</td><td class="c">${h.rc ? '🟥' : h.yc ? '🟨' : ''}</td>
@@ -786,9 +796,16 @@
     dlg.innerHTML = `<div class="modal-body">
       <div class="panel-head" style="margin:0"><div><h2 class="panel-title">Gestionar datos</h2><div class="panel-sub">Tus cambios se guardan en este navegador</div></div><button class="btn btn-ghost" data-action="close-modal" aria-label="Cerrar">✕</button></div>
 
-      <section style="display:grid;gap:8px"><h3 class="panel-title" style="font-size:18px">Sincronizar con LaLiga Fantasy</h3>
-        <p class="muted" style="margin:0;font-size:14px">Intenta descargar estado, valor y puntos por jornada de tus jugadores desde la API pública del juego oficial. Si el navegador bloquea la conexión, usa la importación.</p>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-primary" data-action="api-sync">Sincronizar ahora</button><span id="api-msg" class="muted" style="font-size:13px"></span></div></section>
+      <section style="display:grid;gap:10px"><h3 class="panel-title" style="font-size:18px">Datos oficiales de LaLiga Fantasy</h3>
+        ${state.official ? `<p class="status st-ok" style="justify-self:start">Cargados el ${new Date(state.official.fetchedAt).toLocaleString('es-ES')} · ${state.official.matched} enlazados, ${state.official.added} nuevos</p>` : ''}
+        <ol class="steps">
+          <li>En tu ordenador, abre la carpeta <code>fantasy</code> del proyecto y haz doble clic en <code>sincronizar.bat</code> (Windows) o ejecuta <code>python3 sincronizar.py</code> (Mac/Linux).</li>
+          <li>El programa descarga precios, posiciones, estado y puntos de cada jornada y crea el archivo <code>datos-oficiales.json</code>.</li>
+          <li>Si abres la app desde esa carpeta (<code>index.html</code>) se carga sola. Si la usas desde el enlace, pulsa el botón y elige ese archivo.</li>
+        </ol>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label class="btn btn-primary" style="cursor:pointer">Cargar datos-oficiales.json<input id="official-file" type="file" accept=".json,application/json" hidden></label>
+          <span id="official-msg" class="muted" style="font-size:13px"></span></div></section>
       <hr class="sep">
 
       <section style="display:grid;gap:8px"><h3 class="panel-title" style="font-size:18px">Añadir un jugador que falta</h3>
@@ -819,57 +836,63 @@
     if (!dlg.open) dlg.showModal();
   }
   function applyImport(obj) {
+    if (obj && obj.source === 'laliga-fantasy') { applyOfficial(obj); return; }
     if (!obj || typeof obj !== 'object' || !Array.isArray(obj.squad)) throw new Error('El texto no tiene el formato de una copia de Pizarra Fantasy (falta "squad").');
     ['squad', 'formation', 'lineup', 'overrides', 'statusOv', 'valueOv', 'custom', 'budget'].forEach(k => { if (obj[k] !== undefined) state[k] = obj[k]; });
     if (!FORMATIONS.includes(state.formation)) state.formation = '4-3-3';
     state.example = false;
   }
-  async function syncApi() {
-    const msg = $('#api-msg');
-    const say = t => { if (msg) msg.textContent = t; };
-    const base = 'https://api-fantasy.llt-services.com/api/v3';
-    say('Conectando…');
-    try {
-      const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 12000);
-      const res = await fetch(base + '/players?x-lang=es', { signal: ctrl.signal });
-      clearTimeout(to);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const list = await res.json();
-      if (!Array.isArray(list)) throw new Error('respuesta inesperada');
-      const n = s => DB.slug(String(s || ''));
-      let matched = 0;
-      ALL.forEach(p => {
-        const tn = n(team(p.team).name).split('-').pop();
-        const c = list.find(x => (n(x.nickname) === n(p.name) || n(x.name) === n(p.name)) && n(x.team && x.team.name).includes(tn));
-        if (!c) return;
-        matched++;
-        state.apiIds[p.id] = c.id;
-        if (['ok', 'injured', 'doubtful', 'suspended'].includes(c.playerStatus)) state.statusOv[p.id] = c.playerStatus;
-        if (Number(c.marketValue)) state.valueOv[p.id] = Number(c.marketValue) / 1e6;
-      });
-      say(`${matched} jugadores enlazados. Descargando puntos de tu plantilla…`);
-      let done = 0;
-      for (const id of state.squad) {
-        const apiId = state.apiIds[id]; if (!apiId) continue;
-        try {
-          const r = await fetch(`${base}/player/${apiId}?x-lang=es`); const d = await r.json();
-          (d.playerStats || []).forEach(s => {
-            if (s.weekNumber == null) return;
-            state.overrides[id] = state.overrides[id] || {};
-            state.overrides[id][s.weekNumber] = Number(s.totalPoints) || 0;
-          });
-          done++;
-        } catch (e) { /* jugador sin datos */ }
-      }
-      memo.clear(); save();
-      say(`Listo: ${matched} jugadores actualizados y puntos reales de ${done} de tu plantilla.`);
-      toast('Datos sincronizados');
-      render(); openData(); $('#api-msg').textContent = `Listo: ${matched} jugadores actualizados.`;
-    } catch (e) {
-      say('No se ha podido conectar con la API oficial desde este navegador (bloqueo de red o CORS). Introduce los puntos en la ficha de cada jugador o importa una copia.');
-    }
-  }
 
+  /* ---------------- Datos oficiales (generados por sincronizar.py) ---------------- */
+  const POS_OK = new Set(POS), ST_OK = new Set(Object.keys(STATUS_TXT));
+  const words = s => norm(s).split(/[\s.\-']+/).filter(w => w.length > 1);
+  function matchLocal(o, used) {
+    const cands = DB.PLAYERS.filter(p => p.team === o.team && !used.has(p.id));
+    const nn = norm(o.nick), nf = norm(o.name || o.nick);
+    let c = cands.filter(p => { const n = norm(p.name); return n === nn || n === nf; });
+    if (c.length !== 1) c = cands.filter(p => { const n = norm(p.name); return (' ' + nf + ' ').includes(' ' + n + ' ') || (' ' + n + ' ').includes(' ' + nn + ' '); });
+    if (c.length !== 1) { const last = words(o.nick).pop(); c = last ? cands.filter(p => words(p.name).includes(last)) : []; }
+    if (c.length !== 1) { const first = words(o.nick)[0]; c = first ? cands.filter(p => words(p.name)[0] === first) : []; }
+    return c.length === 1 ? c[0] : null;
+  }
+  function applyOfficial(data) {
+    if (!data || data.source !== 'laliga-fantasy' || !Array.isArray(data.players)) throw new Error('El archivo no es un datos-oficiales.json válido.');
+    const week = Math.max(0, Math.min(38, Number(data.week) || 0));
+    const used = new Set();
+    let matched = 0, added = 0;
+    state.posOv = state.posOv || {};
+    data.players.forEach(o => {
+      if (!DB.TEAM[o.team] || !POS_OK.has(o.pos)) return;
+      const local = matchLocal(o, used);
+      let id;
+      if (local) { id = local.id; used.add(id); matched++; }
+      else {
+        id = 'lf-' + o.fid;
+        const value = Math.max(0.1, Number(o.value) || 0.2);
+        const q = clamp(Math.round(Math.log(value / 0.17) / Math.log(1.8)), 1, 10);
+        const c = { id, team: o.team, name: o.nick || o.name, pos: o.pos, q, value, status: 'ok' };
+        const i = state.custom.findIndex(x => x.id === id);
+        if (i >= 0) state.custom[i] = c; else { state.custom.push(c); added++; }
+      }
+      if (Number(o.value) > 0) state.valueOv[id] = Number(o.value);
+      if (ST_OK.has(o.status)) state.statusOv[id] = o.status;
+      if (local) { if (o.pos !== local.pos) state.posOv[id] = o.pos; else delete state.posOv[id]; }
+      const ov = {};
+      const wk = o.weeks || {};
+      for (let j = 1; j <= week; j++) {
+        const v = wk[j];
+        ov[j] = Array.isArray(v) ? v : typeof v === 'number' ? [v, 90, 0, 0] : 'x';
+      }
+      state.overrides[id] = ov;
+    });
+    if (data.fixtures && typeof data.fixtures === 'object') { state.officialFixtures = data.fixtures; DB.setFixtures(data.fixtures); }
+    if (week) { state.officialWeek = week; DB.setMinPlayed(week); }
+    state.official = { fetchedAt: data.fetchedAt || new Date().toISOString(), players: data.players.length, matched, added, week };
+    computeWeeks(); rebuild(); memo.clear(); save(); render();
+    $('#md-label').innerHTML = `<b>J${NEXT}</b><span>${dateTxt(DB.DATES[NEXT - 1])}</span>`;
+    toast(`Datos oficiales cargados: ${matched} enlazados, ${added} nuevos`);
+    return state.official;
+  }
 
   /* ---------------- Buscador con sugerencias ---------------- */
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -1069,7 +1092,6 @@
         try { applyImport(JSON.parse($('#data-json').value)); memo.clear(); render(); dlg.close(); toast('Copia importada'); }
         catch (err) { $('#data-msg').textContent = err instanceof SyntaxError ? 'El texto no es un JSON válido. Revisa que esté completo.' : err.message; }
         break;
-      case 'api-sync': syncApi(); break;
       case 'clear-squad': if (armed('clear', el, 'Pulsa otra vez para vaciar')) { state.squad = []; state.lineup = null; state.example = false; dlg.close(); render(); toast('Plantilla vaciada'); } break;
       case 'clear-squad-direct': state.squad = []; state.lineup = null; state.example = false; setTab('equipo'); { const v = $('#vsearch'); if (v) v.focus(); } toast('Escribe dos letras y añade a tus jugadores con +'); break;
       case 'focus-search': { const v = $('#vsearch') || $('#gsearch'); if (v) { v.focus(); v.scrollIntoView({ block: 'center' }); } break; }
@@ -1106,6 +1128,14 @@
     const t = e.target;
     if (t.id === 'mk-team') { state.market.team = t.value; state.market.limit = 40; updateMarket(); save(); }
     if (t.id === 'status-sel') { const p = BY[t.dataset.id]; if (t.value === p.status) delete state.statusOv[p.id]; else state.statusOv[p.id] = t.value; memo.clear(); render(); openPlayer(p.id); toast('Estado actualizado'); }
+    if (t.id === 'official-file' && t.files[0]) {
+      const r = new FileReader();
+      r.onload = () => {
+        try { const res = applyOfficial(JSON.parse(r.result)); openData(); $('#official-msg').textContent = `Listo: ${res.matched} jugadores enlazados y ${res.added} añadidos.`; }
+        catch (err) { $('#official-msg').textContent = err instanceof SyntaxError ? 'El archivo no es un JSON válido.' : err.message; }
+      };
+      r.readAsText(t.files[0]);
+    }
     if (t.id === 'data-file' && t.files[0]) {
       const r = new FileReader();
       r.onload = () => { $('#data-json').value = r.result; $('#data-msg').textContent = 'Archivo cargado. Pulsa «Importar el texto».'; };
@@ -1145,6 +1175,15 @@
   $$('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
   $('#data-btn').addEventListener('click', openData);
   $('#gsearch-slot').outerHTML = searchBox('gsearch', 'Buscar jugador…');
+  if (state.officialFixtures) DB.setFixtures(state.officialFixtures);
+  if (state.officialWeek) DB.setMinPlayed(state.officialWeek);
+  computeWeeks();
+  rebuild();
+  const OD = window.OFFICIAL_DATA;
+  if (OD && OD.source === 'laliga-fantasy' && (!state.official || String(OD.fetchedAt) > String(state.official.fetchedAt))) {
+    try { applyOfficial(OD); } catch (e) { /* datos locales dañados: se ignoran */ }
+  }
+
   $('#md-label').innerHTML = `<b>J${NEXT}</b><span>${dateTxt(DB.DATES[NEXT - 1])}</span>`;
   const h = (location.hash || '').slice(1);
   if (VIEWS[h]) state.tab = h;

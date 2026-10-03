@@ -132,31 +132,57 @@
     PLAYERS.filter(p => p.team === t.id && p.pos === pos).sort((a, b) => b.q - a.q).forEach((p, i) => { DEPTH[p.id] = i; });
   }));
 
-  /* ---------- Calendario: 38 jornadas, doble vuelta ---------- */
+  /* ---------- Calendario real ----------
+     J1-J7: resultados publicados en prensa (null = marcador no encontrado).
+     J8-J12: calendario oficial publicado por LaLiga.
+     J13 en adelante: provisional hasta que se publique (o se sincronice). */
+  const REAL = {
+    1: 'ALA-GET 3-0|SEV-RAY 2-1|RAC-VIL 2-2|ESP-LEV 3-0|DEP-ELC 1-1|ATM-MAL 2-0|VAL-BET 0-1|RMA-RSO 4-1|CEL-OSA 1-2|BAR-ATH 2-0',
+    2: 'RAY-ALA 1-1|BET-RSO 1-0|ATH-SEV 1-3|VAL-CEL 0-0|ESP-RMA 1-2|ATM-VIL 2-2|GET-RAC 1-0|ELC-BAR 0-5|OSA-LEV|MAL-DEP',
+    3: 'RAC-ELC 3-2|ALA-VIL 1-0|SEV-ATM 1-3|RSO-ESP 2-1|LEV-BET 5-2|CEL-ATH 0-2|DEP-VAL 3-1|RMA-MAL 4-0|BAR-RAY 5-2|OSA-GET 1-0',
+    4: 'BET-RMA 1-0|VIL-DEP 2-3|RAY-RAC 3-2|ATH-ATM 3-0|ESP-SEV 1-1|ALA-OSA 5-2|MAL-LEV 0-0|VAL-BAR 0-5|ELC-RSO 2-3|GET-CEL 1-1',
+    5: 'SEV-VAL 1-0|RMA-RAY 4-1|ATH-ELC 1-1|OSA-ESP 0-2|RAC-ALA 2-1|RSO-ATM 0-3|GET-DEP 1-1|LEV-BAR 2-4|CEL-MAL 1-1|VIL-BET 1-2',
+    6: 'MAL-VIL 1-3|BET-GET 1-0|BAR-RAC 7-2|DEP-SEV 0-1|ATM-OSA 4-0|ELC-RMA 2-3|ALA-VAL 0-1|RAY-ESP 2-1|RSO-CEL 0-0|ATH-LEV 2-0',
+    7: 'ESP-ELC 1-3|OSA-RAY 1-1|ATH-ALA 0-0|CEL-RAC 5-0|SEV-BAR 1-3|GET-MAL 1-0|ATM-RMA 2-1|VIL-LEV 3-1|DEP-BET 2-1|VAL-RSO 2-3',
+    8: 'MAL-ESP|RAY-ATH|ALA-ATM|BAR-GET|RMA-VIL|ELC-CEL|RSO-DEP|BET-OSA|RAC-VAL|LEV-SEV',
+    9: 'DEP-LEV|OSA-RAC|GET-RAY|BET-BAR|RMA-SEV|ESP-ATM|CEL-ALA|MAL-RSO|VAL-ATH|VIL-ELC',
+    10: 'ALA-MAL|RAC-ESP|CEL-BET|RAY-ELC|VAL-VIL|RSO-LEV|ATM-DEP|ATH-GET|BAR-RMA|SEV-OSA',
+    11: 'DEP-OSA|RAC-RMA|GET-SEV|LEV-ATM|VIL-ESP|BET-MAL|ATH-RSO|BAR-ALA|ELC-VAL|RAY-CEL',
+    12: 'VIL-GET|ESP-DEP|RSO-RAY|OSA-ATH|ELC-BET|ATM-BAR|VAL-RMA|MAL-RAC|SEV-ALA|CEL-LEV'
+  };
+  const parseRound = str => str.split('|').map(m => {
+    const [teams, score] = m.split(' ');
+    const [home, away] = teams.split('-');
+    const g = { home, away };
+    if (score) { const [hg, ag] = score.split('-').map(Number); g.hg = hg; g.ag = ag; }
+    return g;
+  });
+
   const SEASON_SEED = hash('laliga-2026-27');
   const order = TEAMS.map(t => t.id);
   (function shuffle() { const r = rng(SEASON_SEED); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } })();
-
   const ROUNDS = [];
-  (function circle() {
-    const n = order.length, arr = order.slice();
+  (function build() {
+    const n = order.length, arr = order.slice(), gen = [];
     for (let r = 0; r < n - 1; r++) {
       const games = [];
       for (let i = 0; i < n / 2; i++) {
         const a = arr[i], b = arr[n - 1 - i];
         games.push((r + i) % 2 === 0 ? { home: a, away: b } : { home: b, away: a });
       }
-      ROUNDS.push(games);
+      gen.push(games);
       arr.splice(1, 0, arr.pop());
     }
-    for (let r = 0; r < n - 1; r++) ROUNDS.push(ROUNDS[r].map(g => ({ home: g.away, away: g.home })));
+    for (let r = 0; r < n - 1; r++) gen.push(gen[r].map(g => ({ home: g.away, away: g.home })));
+    for (let j = 1; j <= 38; j++) ROUNDS.push(REAL[j] ? parseRound(REAL[j]) : gen[j - 1].map(g => Object.assign({ prov: true }, g)));
   })();
 
-  // Fechas (domingo de cada jornada) con parones de selecciones
-  const BREAKS = ['2026-09-06', '2026-10-11', '2026-11-15', '2026-12-27', '2027-01-03', '2027-03-28'];
-  const DATES = [];
-  (function dates() {
-    const d = new Date('2026-08-16T12:00:00');
+  // Fechas (domingo de cada jornada). J1-J12 según el calendario publicado.
+  const DATES = ['2026-08-16', '2026-08-23', '2026-08-30', '2026-09-06', '2026-09-13', '2026-09-16', '2026-09-27',
+    '2026-10-11', '2026-10-18', '2026-10-25', '2026-11-01', '2026-11-08'];
+  (function rest() {
+    const BREAKS = ['2026-11-15', '2026-12-27', '2027-01-03', '2027-03-28'];
+    const d = new Date('2026-11-22T12:00:00');
     while (DATES.length < 38) {
       const iso = d.toISOString().slice(0, 10);
       if (!BREAKS.includes(iso)) DATES.push(iso);
@@ -164,11 +190,30 @@
     }
   })();
 
+  // Jornadas disputadas: como mínimo 7 (la próxima es la 8) y avanza sola con el calendario
+  let MIN_PLAYED = 7;
   function playedJornadas(now) {
     const t = (now || new Date()).getTime();
     let n = 0;
     DATES.forEach((iso, i) => { if (t > new Date(iso + 'T23:59:00').getTime() + 864e5) n = i + 1; });
-    return Math.min(38, Math.max(0, n));
+    return Math.min(38, Math.max(MIN_PLAYED, n));
+  }
+  function setMinPlayed(n) { if (n >= 0 && n <= 38) MIN_PLAYED = n; Object.keys(cache).forEach(k => delete cache[k]); }
+
+  // Partidos oficiales importados (sustituyen a los de la tabla)
+  function setFixtures(byWeek) {
+    Object.entries(byWeek || {}).forEach(([w, list]) => {
+      const j = Number(w);
+      if (!(j >= 1 && j <= 38) || !Array.isArray(list) || list.length < 10) return;
+      const ok = list.every(g => TEAM[g.home] && TEAM[g.away]);
+      if (!ok) return;
+      ROUNDS[j - 1] = list.map(g => {
+        const m = { home: g.home, away: g.away };
+        if (Number.isFinite(g.hg) && Number.isFinite(g.ag)) { m.hg = g.hg; m.ag = g.ag; }
+        return m;
+      });
+    });
+    Object.keys(cache).forEach(k => delete cache[k]);
   }
 
   /* ---------- Simulación de partido y puntos (sistema tipo LaLiga Fantasy) ---------- */
@@ -187,8 +232,10 @@
       const H = TEAM[g.home], A = TEAM[g.away];
       const lh = Math.max(0.25, 1.45 * Math.pow(H.str / A.str, 2.1) * 1.08);
       const la = Math.max(0.2, 1.2 * Math.pow(A.str / H.str, 2.1) * 0.94);
-      const hg = poisson(r, lh), ag = poisson(r, la);
-      out.matches.push({ home: g.home, away: g.away, hg, ag });
+      const known = Number.isFinite(g.hg) && Number.isFinite(g.ag);
+      const sh = poisson(r, lh), sa = poisson(r, la);
+      const hg = known ? g.hg : sh, ag = known ? g.ag : sa;
+      out.matches.push({ home: g.home, away: g.away, hg: known ? hg : null, ag: known ? ag : null, real: known });
       [[g.home, hg, ag, true, g.away], [g.away, ag, hg, false, g.home]].forEach(([team, gf, ga, home, opp]) => {
         const squad = byTeam[team];
         const lastJ = playedJornadas();
@@ -237,10 +284,10 @@
   }
 
   /* ---------- Valor de mercado (M€) ---------- */
-  function baseValue(p) { return 0.28 * Math.pow(1.64, p.q); }
+  function baseValue(p) { return 0.17 * Math.pow(1.8, p.q); }
 
   global.FantasyDB = {
     TEAMS, TEAM, PLAYERS, ROUNDS, DATES, GK_STARTER,
-    playedJornadas, simulateJornada, baseValue, hash, rng, slug, DEPTH, STARTERS
+    playedJornadas, simulateJornada, baseValue, hash, rng, slug, DEPTH, STARTERS, setFixtures, setMinPlayed
   };
 })(window);

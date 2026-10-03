@@ -494,3 +494,6 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(2px); }
 .add-panel-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
 @media (max-width: 760px) { .add-panel { grid-template-columns: 1fr; } }
 kbd { font-family: ui-monospace, Menlo, monospace; font-size: 11px; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--surface-2); color: var(--ink); }
+
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
