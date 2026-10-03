@@ -506,3 +506,17 @@ code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background
 .prem-toggle { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
 .prem-toggle input { width: 16px; height: 16px; accent-color: var(--brand); }
 .prem-badge { font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--accent-ink); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; }
+
+/* ---------- Mi liga ---------- */
+.league-teams { display: grid; gap: 6px; }
+.lteam { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.lteam.mine { border-color: var(--brand); background: color-mix(in srgb, var(--brand-soft) 50%, var(--surface)); }
+.lteam summary { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; cursor: pointer; list-style: none; }
+.lteam summary::-webkit-details-marker { display: none; }
+.lteam summary::after { content: "▾"; grid-column: 3; justify-self: end; color: var(--muted); display: none; }
+.lteam-name { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lteam-stats { display: grid; justify-items: end; font-size: 12px; color: var(--muted); line-height: 1.3; }
+.lteam-stats b { color: var(--ink); font-size: 14px; }
+.lteam-body { padding: 0 12px 12px; display: grid; gap: 10px; justify-items: start; }
+.lteam-body .table-wrap { width: 100%; }
+p.notice { display: block; }

@@ -48,7 +48,7 @@
     v: 2, squad: EXAMPLE.slice(), example: true, formation: '4-3-3', lineup: null, budget: 8.5,
     overrides: {}, statusOv: {}, valueOv: {}, posOv: {}, apiIds: {}, custom: [], official: null, officialFixtures: null, officialWeek: 0, tab: 'resumen', noticeHidden: false,
     market: { q: '', pos: 'ALL', team: 'ALL', max: '', sort: 'xp', dir: -1, limit: 40 },
-    premium: false, calOnlyMine: false, calJ: LAST, cmp: ['rma-kylian-mbappe', 'bar-lamine-yamal']
+    premium: false, league: null, leagueSel: null, myTeam: {}, fidMap: {}, calOnlyMine: false, calJ: LAST, cmp: ['rma-kylian-mbappe', 'bar-lamine-yamal']
   });
   let state = load();
   function load() {
@@ -326,7 +326,7 @@
   }
 
   /* ---------------- Vistas ---------------- */
-  const VIEWS = { resumen: viewResumen, equipo: viewEquipo, calendario: viewCalendario, mercado: viewMercado, asistente: viewAsistente };
+  const VIEWS = { resumen: viewResumen, equipo: viewEquipo, calendario: viewCalendario, mercado: viewMercado, liga: viewLiga, asistente: viewAsistente };
   function render() {
     rebuild();
     $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === state.tab)));
@@ -841,6 +841,7 @@
   }
   function applyImport(obj) {
     if (obj && obj.source === 'laliga-fantasy') { applyOfficial(obj); return; }
+    if (obj && obj.source === 'laliga-fantasy-liga') { applyLeague(obj); return; }
     if (!obj || typeof obj !== 'object' || !Array.isArray(obj.squad)) throw new Error('El texto no tiene el formato de una copia de Pizarra Fantasy (falta "squad").');
     ['squad', 'formation', 'lineup', 'overrides', 'statusOv', 'valueOv', 'custom', 'budget'].forEach(k => { if (obj[k] !== undefined) state[k] = obj[k]; });
     if (!FORMATIONS.includes(state.formation)) state.formation = '4-3-3';
@@ -878,6 +879,7 @@
         const i = state.custom.findIndex(x => x.id === id);
         if (i >= 0) state.custom[i] = c; else { state.custom.push(c); added++; }
       }
+      (state.fidMap = state.fidMap || {})[o.fid] = id;
       if (Number(o.value) > 0) state.valueOv[id] = Number(o.value);
       if (ST_OK.has(o.status)) state.statusOv[id] = o.status;
       if (local) { if (o.pos !== local.pos) state.posOv[id] = o.pos; else delete state.posOv[id]; }
@@ -896,6 +898,145 @@
     $('#md-label').innerHTML = `<b>J${NEXT}</b><span>${dateTxt(DB.DATES[NEXT - 1])}</span>`;
     toast(`Datos oficiales cargados: ${matched} enlazados, ${added} nuevos`);
     return state.official;
+  }
+
+
+  /* ---------------- Mi liga privada (generado por sincronizar.py --liga) ---------------- */
+  function resolvePlayer(o) {
+    state.fidMap = state.fidMap || {};
+    const known = state.fidMap[o.fid];
+    if (known && (DB.PLAYERS.some(p => p.id === known) || state.custom.some(c => c.id === known))) return known;
+    if (!DB.TEAM[o.team] || !POS_OK.has(o.pos)) return null;
+    const local = matchLocal(o, new Set());
+    let id;
+    if (local) id = local.id;
+    else {
+      id = 'lf-' + o.fid;
+      if (!state.custom.some(c => c.id === id)) {
+        const value = Math.max(0.1, Number(o.value) || 0.2);
+        state.custom.push({ id, team: o.team, name: o.nick || o.name, pos: o.pos, q: clamp(Math.round(Math.log(value / 0.17) / Math.log(1.8)), 1, 10), value, status: 'ok' });
+      }
+    }
+    state.fidMap[o.fid] = id;
+    if (Number(o.value) > 0) state.valueOv[id] = Number(o.value);
+    if (ST_OK.has(o.status)) state.statusOv[id] = o.status;
+    if (local && o.pos !== local.pos) (state.posOv = state.posOv || {})[id] = o.pos;
+    return id;
+  }
+  function applyLeague(data) {
+    if (!data || data.source !== 'laliga-fantasy-liga' || !Array.isArray(data.leagues)) throw new Error('El archivo no es un datos-liga.json válido.');
+    data.leagues.forEach(lg => {
+      (lg.market || []).forEach(m => { m.id = resolvePlayer(m); });
+      (lg.teams || []).forEach(t => (t.players || []).forEach(p => { p.id = resolvePlayer(p); }));
+    });
+    state.league = data;
+    if (!data.leagues.some(l => l.id === state.leagueSel)) state.leagueSel = data.leagues[0] ? data.leagues[0].id : null;
+    rebuild(); memo.clear(); save(); render();
+    toast(`Liga cargada: ${data.leagues.map(l => l.name).join(', ')}`);
+  }
+  const relTime = iso => {
+    if (!iso) return '—';
+    const ms = new Date(iso).getTime() - Date.now();
+    if (!isFinite(ms)) return '—';
+    if (ms <= 0) return 'ya';
+    const h = Math.round(ms / 36e5);
+    return h < 24 ? `en ${h} h` : `en ${Math.round(h / 24)} d`;
+  };
+  const locked = p => p.clauseLockEnd && new Date(p.clauseLockEnd).getTime() > Date.now();
+
+  function ligaHelp(first) {
+    return `<section class="panel" style="display:grid;gap:14px">
+      <div class="panel-head" style="margin:0"><div><h2 class="panel-title">${first ? 'Conecta tu liga privada' : 'Actualizar los datos de tu liga'}</h2>
+        <div class="panel-sub">Mercado del día, plantillas de tus rivales, cláusulas y saldo. Se descargan con tu sesión, solo en tu ordenador.</div></div></div>
+      <ol class="steps">
+        <li>En el ordenador, entra en la <b>web de LaLiga Fantasy</b> con Chrome o Edge (no en la app del móvil) e inicia sesión.</li>
+        <li>Pulsa <kbd>F12</kbd>, abre la pestaña <b>Red</b> (Network) y recarga con <kbd>F5</kbd>. En el filtro escribe <code>api-fantasy</code>.</li>
+        <li>Pulsa cualquier petición de la lista. En <b>Encabezados → Encabezados de solicitud</b> busca <code>authorization: Bearer eyJ…</code> y copia todo lo que va después de <code>Bearer</code>.</li>
+        <li>En la carpeta <code>fantasy</code>, haz doble clic en <code>sincronizar-liga.bat</code>, pega el token (clic derecho; no se verá) y pulsa Enter.</li>
+        <li>Abre <code>index.html</code> de esa carpeta (se carga solo) o pulsa aquí abajo y elige <code>datos-liga.json</code>.</li>
+      </ol>
+      <p class="notice" style="margin:0"><span><b>Tu token es como tu contraseña</b> durante unas horas: no lo pegues en ningún chat (tampoco aquí) ni lo subas a GitHub. Caduca solo; si el programa dice que está caducado, cópialo otra vez.</span></p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label class="btn btn-primary" style="cursor:pointer">Cargar datos-liga.json<input id="league-file" type="file" accept=".json,application/json" hidden></label>
+        <span id="league-msg" class="muted" style="font-size:13px"></span></div>
+    </section>`;
+  }
+
+  function viewLiga() {
+    const L = state.league;
+    if (!L || !L.leagues || !L.leagues.length) return ligaHelp(true);
+    const lg = L.leagues.find(l => l.id === state.leagueSel) || L.leagues[0];
+    const mine = (state.myTeam || {})[lg.id];
+    const market = (lg.market || []).map(m => ({ m, p: BY[m.id] })).filter(x => x.p)
+      .map(x => Object.assign(x, { x3: xpRange(x.p), ppm: xpRange(x.p) / Math.max(0.1, x.m.price) }))
+      .sort((a, b) => b.ppm - a.ppm);
+    const best = market.filter(x => !unavailable(x.p)).slice(0, 3).map(x => x.m.id);
+    const verdict = x => {
+      if (unavailable(x.p)) return `<span class="status st-injured">${STATUS_TXT[statusOf(x.p)]}</span>`;
+      if (best.includes(x.m.id) && x.x3 >= 10 && x.m.price <= x.m.value * 1.05) return '<span class="status st-ok">Chollo</span>';
+      if (x.m.price > x.m.value * 1.15) return '<span class="status st-doubtful">Caro</span>';
+      return '<span class="muted">—</span>';
+    };
+    const teams = (lg.teams || []).slice().sort((a, b) => a.position - b.position);
+    const targets = teams.filter(t => t.id !== mine).flatMap(t => (t.players || []).map(pl => ({ t, pl, p: BY[pl.id] })))
+      .filter(x => x.p && x.pl.clause > 0 && !locked(x.pl) && !unavailable(x.p))
+      .map(x => Object.assign(x, { x3: xpRange(x.p), ppm: xpRange(x.p) / x.pl.clause }))
+      .sort((a, b) => b.ppm - a.ppm).slice(0, 8);
+    const myT = teams.find(t => t.id === mine);
+    const diff = (a, b) => { const d = (a - b) / Math.max(0.1, b) * 100; return Math.abs(d) < 1 ? '<span class="muted">=</span>' : `<span class="${d > 0 ? 'delta-down' : 'delta-up'}">${d > 0 ? '+' : ''}${f0(d)}%</span>`; };
+
+    return `
+    <section class="panel">
+      <div class="panel-head" style="margin:0">
+        <div><span class="eyebrow">Liga privada</span><h2 class="hero-title" style="font-size:clamp(26px,4vw,40px)">${esc(lg.name)}</h2>
+          <div class="panel-sub">Datos del ${new Date(L.fetchedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} · ${teams.length} equipos · ${market.length} jugadores en el mercado</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${L.leagues.length > 1 ? `<div class="chips">${L.leagues.map(l => `<button class="chip" aria-pressed="${l.id === lg.id}" data-action="league-sel" data-id="${esc(l.id)}">${esc(l.name)}</button>`).join('')}</div>` : ''}
+          <label class="btn" style="cursor:pointer">Actualizar<input id="league-file" type="file" accept=".json,application/json" hidden></label>
+        </div>
+      </div>
+      ${myT ? `<div class="kpis" style="margin-top:16px">
+        <div class="kpi"><div class="kpi-label">Tu posición</div><div class="kpi-value">${myT.position}º</div><div class="kpi-foot">de ${teams.length} · ${f0(myT.points)} pts</div></div>
+        <div class="kpi"><div class="kpi-label">Tu saldo</div><div class="kpi-value">${myT.money !== null && myT.money !== undefined ? f1(myT.money) : '—'}<small>M€</small></div><div class="kpi-foot">según la liga</div></div>
+        <div class="kpi"><div class="kpi-label">Valor de tu equipo</div><div class="kpi-value">${f1(myT.value)}<small>M€</small></div><div class="kpi-foot">${(myT.players || []).length} jugadores</div></div>
+        <div class="kpi"><div class="kpi-label">Al líder</div><div class="kpi-value">${myT.position === 1 ? '—' : f0(teams[0].points - myT.points)}</div><div class="kpi-foot">${myT.position === 1 ? '¡vas primero!' : 'puntos de diferencia'}</div></div>
+      </div>` : `<p class="notice" style="margin:16px 0 0"><span>Dinos cuál es tu equipo: abre tu fila en <b>Clasificación</b> y pulsa <b>«Es mi equipo»</b>. Se cargarán tu plantilla y tu saldo.</span></p>`}
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2 class="panel-title">Mercado de hoy</h2><div class="panel-sub">Ordenado por puntos esperados en 3 jornadas por cada millón del precio de venta</div></div></div>
+      <div class="table-wrap"><table class="t">
+        <thead><tr><th>Jugador</th><th>Vende</th><th class="r">Valor</th><th class="r">Precio</th><th class="r">Forma 3J</th><th class="r">xP J${NEXT}</th><th class="r">xP 3J</th><th class="r">Pts/M€</th><th>Próximos</th><th class="r">Pujas</th><th>Acaba</th><th></th><th></th></tr></thead>
+        <tbody>${market.map(x => `<tr class="${inSquad(x.p.id) ? 'owned' : ''}">
+          <td>${pcell(x.p)}</td><td>${esc(x.m.seller)}</td><td class="r num">${money(x.m.value)}</td>
+          <td class="r num"><b>${money(x.m.price)}</b><div style="font-size:11px">${diff(x.m.price, x.m.value)}</div></td>
+          <td class="r num">${f1(metrics(x.p).form3)}</td><td class="r"><span class="xp">${f1(xp(x.p))}</span></td><td class="r num">${f1(x.x3)}</td>
+          <td class="r num"><b>${f1(x.ppm)}</b></td><td>${fdrRow(x.p.team, 3)}</td><td class="r num">${x.m.bids || 0}</td>
+          <td class="num">${relTime(x.m.expires)}</td><td>${verdict(x)}</td><td>${addBtn(x.p)}</td></tr>`).join('') || '<tr><td colspan="13" class="muted" style="padding:20px 8px">No hay jugadores en el mercado de esta liga.</td></tr>'}</tbody>
+      </table></div>
+    </section>
+
+    <section class="grid">
+      <div class="panel span-7">
+        <div class="panel-head"><div><h2 class="panel-title">Clasificación</h2><div class="panel-sub">Abre un equipo para ver sus jugadores y cláusulas</div></div></div>
+        <div class="league-teams">${teams.map(t => `<details class="lteam${t.id === mine ? ' mine' : ''}">
+          <summary><span class="rank-n">${t.position}</span><span class="lteam-name">${esc(t.manager)}${t.id === mine ? ' <span class="owncount">Tú</span>' : ''}</span>
+            <span class="lteam-stats"><b class="num">${f0(t.points)} pts</b><span class="num">${money(t.value)}${t.money !== null && t.money !== undefined ? ` · saldo ${money(t.money)}` : ''}</span></span></summary>
+          <div class="lteam-body">
+            ${t.id === mine ? '' : `<button class="btn btn-sm btn-primary" data-action="my-team" data-id="${esc(t.id)}">Es mi equipo</button>`}
+            <div class="table-wrap" style="margin:0;padding:0"><table class="t"><thead><tr><th>Jugador</th><th class="r">Valor</th><th class="r">Cláusula</th><th class="r">xP 3J</th><th>Cláusula</th></tr></thead>
+            <tbody>${(t.players || []).map(pl => { const p = BY[pl.id]; if (!p) return ''; return `<tr><td>${pcell(p)}</td><td class="r num">${money(pl.value)}</td>
+              <td class="r num">${pl.clause ? money(pl.clause) : '—'}</td><td class="r num">${f1(xpRange(p))}</td>
+              <td>${locked(pl) ? `<span class="status st-doubtful">Bloqueada ${relTime(pl.clauseLockEnd)}</span>` : '<span class="status st-ok">Libre</span>'}</td></tr>`; }).join('')}</tbody></table></div>
+          </div></details>`).join('')}</div>
+      </div>
+      <div class="panel span-5">
+        <div class="panel-head"><div><h2 class="panel-title">Cláusulas a por las que ir</h2><div class="panel-sub">Rivales con la cláusula libre · más puntos por millón</div></div></div>
+        <div class="rank">${targets.map((x, i) => `<div class="rank-item"><span class="rank-n">${i + 1}</span>
+          <div style="min-width:0">${pcell(x.p)}<div class="pmeta" style="margin-top:2px">de ${esc(x.t.manager)} · cláusula <b>${money(x.pl.clause)}</b> · ${f1(x.x3)} xP en 3J</div></div>
+          <span class="xp">${f1(x.ppm)}</span></div>`).join('') || '<p class="muted" style="margin:0">No hay cláusulas libres interesantes ahora mismo.</p>'}</div>
+      </div>
+    </section>`;
   }
 
   /* ---------------- Buscador con sugerencias ---------------- */
@@ -1057,6 +1198,16 @@
         if (j >= 0 && j !== i) xi[j] = xi[i];
         xi[i] = pid; state.lineup = xi; dlg.close(); render(); break;
       }
+      case 'league-sel': state.leagueSel = id; render(); break;
+      case 'my-team': {
+        const lg = state.league.leagues.find(l => l.id === state.leagueSel) || state.league.leagues[0];
+        const t = lg.teams.find(x => x.id === id);
+        state.myTeam = Object.assign({}, state.myTeam, { [lg.id]: id });
+        state.squad = [...new Set((t.players || []).map(p => p.id).filter(Boolean))].slice(0, MAX_SQUAD);
+        state.lineup = null; state.example = false;
+        if (t.money !== null && t.money !== undefined) state.budget = t.money;
+        toast(`Plantilla de ${t.manager} cargada como la tuya`); render(); break;
+      }
       case 'hide-notice': state.noticeHidden = true; render(); break;
       case 'open-data': openData(); break;
       case 'cal-only-mine': state.calOnlyMine = !state.calOnlyMine; render(); break;
@@ -1137,6 +1288,14 @@
       if (!state.premium && FORMATIONS_PREM.includes(state.formation)) { state.formation = '4-3-3'; state.lineup = bestXI('4-3-3', state.squad); }
       render(); toast(state.premium ? 'Formaciones premium activadas' : 'Formaciones premium desactivadas');
     }
+    if (t.id === 'league-file' && t.files[0]) {
+      const r = new FileReader();
+      r.onload = () => {
+        try { applyLeague(JSON.parse(r.result)); }
+        catch (err) { const m = $('#league-msg'); const txt = err instanceof SyntaxError ? 'El archivo no es un JSON válido.' : err.message; if (m) m.textContent = txt; else toast(txt); }
+      };
+      r.readAsText(t.files[0]);
+    }
     if (t.id === 'official-file' && t.files[0]) {
       const r = new FileReader();
       r.onload = () => {
@@ -1191,6 +1350,10 @@
   const OD = window.OFFICIAL_DATA;
   if (OD && OD.source === 'laliga-fantasy' && (!state.official || String(OD.fetchedAt) > String(state.official.fetchedAt))) {
     try { applyOfficial(OD); } catch (e) { /* datos locales dañados: se ignoran */ }
+  }
+  const LD = window.LEAGUE_DATA;
+  if (LD && LD.source === 'laliga-fantasy-liga' && (!state.league || String(LD.fetchedAt) > String(state.league.fetchedAt))) {
+    try { applyLeague(LD); } catch (e) { /* se ignora */ }
   }
 
   $('#md-label').innerHTML = `<b>J${NEXT}</b><span>${dateTxt(DB.DATES[NEXT - 1])}</span>`;
