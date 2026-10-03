@@ -322,6 +322,8 @@ table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
   .slot .jersey, .slot.empty .ghost { width: 36px; height: 36px; }
   .slot-name { font-size: 10.5px; padding: 1px 4px; }
   .slot-alert { margin-left: 24px; }
+  .slot { padding: 2px; }
+  .slot-opp, .slot-xp { font-size: 10px; padding: 0 3px; }
 }
 .bench { display: grid; gap: 6px; }
 .bench-item {
@@ -497,3 +499,10 @@ kbd { font-family: ui-monospace, Menlo, monospace; font-size: 11px; padding: 1px
 
 .steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
 code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+.chip-prem { border-color: var(--accent); }
+.chip-prem::before { content: "★ "; color: var(--accent-ink); }
+.chip-prem[aria-pressed="true"]::before { color: var(--accent); }
+.prem-toggle { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.prem-toggle input { width: 16px; height: 16px; accent-color: var(--brand); }
+.prem-badge { font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--accent-ink); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; }

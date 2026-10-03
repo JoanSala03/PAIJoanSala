@@ -21,7 +21,10 @@
   const POS_NAME = { POR: 'Portero', DEF: 'Defensa', CEN: 'Centrocampista', DEL: 'Delantero' };
   const POS_PLURAL = { POR: 'Porteros', DEF: 'Defensas', CEN: 'Centrocampistas', DEL: 'Delanteros' };
   const STATUS_TXT = { ok: 'Disponible', doubtful: 'Duda', injured: 'Lesionado', suspended: 'Sancionado' };
-  const FORMATIONS = ['3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-5-1', '5-3-2', '5-4-1'];
+  const FORMATIONS_STD = ['3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-5-1', '5-3-2', '5-4-1'];
+  const FORMATIONS_PREM = ['3-3-4', '4-2-4', '5-2-3'];
+  const FORMATIONS = FORMATIONS_STD.concat(FORMATIONS_PREM);
+  const formations = () => (state.premium ? FORMATIONS : FORMATIONS_STD);
   const FDR_TXT = { 1: 'Muy asequible', 2: 'Asequible', 3: 'Igualado', 4: 'Exigente', 5: 'Muy exigente' };
   const MAX_SQUAD = 24;
   const STORE = 'pizarra-fantasy-v2';
@@ -45,7 +48,7 @@
     v: 2, squad: EXAMPLE.slice(), example: true, formation: '4-3-3', lineup: null, budget: 8.5,
     overrides: {}, statusOv: {}, valueOv: {}, posOv: {}, apiIds: {}, custom: [], official: null, officialFixtures: null, officialWeek: 0, tab: 'resumen', noticeHidden: false,
     market: { q: '', pos: 'ALL', team: 'ALL', max: '', sort: 'xp', dir: -1, limit: 40 },
-    calOnlyMine: false, calJ: LAST, cmp: ['rma-kylian-mbappe', 'bar-lamine-yamal']
+    premium: false, calOnlyMine: false, calJ: LAST, cmp: ['rma-kylian-mbappe', 'bar-lamine-yamal']
   });
   let state = load();
   function load() {
@@ -162,7 +165,7 @@
   const xiTotal = ids => sum(ids, id => (id && BY[id] ? xp(BY[id]) : 0));
   function bestFormation(ids) {
     let best = null;
-    FORMATIONS.forEach(f => { const xi = bestXI(f, ids); const t = xiTotal(xi); if (!best || t > best.total + 0.01) best = { f, xi, total: t }; });
+    formations().forEach(f => { const xi = bestXI(f, ids); const t = xiTotal(xi); if (!best || t > best.total + 0.01) best = { f, xi, total: t }; });
     return best;
   }
   function currentXI() {
@@ -471,7 +474,8 @@
     ${addPlayersPanel()}
     <section class="panel">
       <div class="toolbar" style="justify-content:space-between">
-        <div class="field">Formación<div class="chips" role="group" aria-label="Formación">${FORMATIONS.map(f => `<button class="chip" aria-pressed="${f === state.formation}" data-action="formation" data-f="${f}">${f}</button>`).join('')}</div></div>
+        <div class="field">Formación<div class="chips" role="group" aria-label="Formación">${formations().map(f => `<button class="chip${FORMATIONS_PREM.includes(f) ? ' chip-prem' : ''}" aria-pressed="${f === state.formation}" data-action="formation" data-f="${f}"${FORMATIONS_PREM.includes(f) ? ' title="Formación premium"' : ''}>${f}</button>`).join('')}</div>
+          <label class="prem-toggle"><input id="premium-toggle" type="checkbox" ${state.premium ? 'checked' : ''}> Tengo formaciones premium <span class="prem-badge">★ ${FORMATIONS_PREM.join(' · ')}</span></label></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn" data-action="auto-xi">Mejor once en ${state.formation}</button>
           <button class="btn btn-primary" data-action="apply-best">Mejor formación (${bf ? bf.f : '—'})</button>
@@ -1128,6 +1132,11 @@
     const t = e.target;
     if (t.id === 'mk-team') { state.market.team = t.value; state.market.limit = 40; updateMarket(); save(); }
     if (t.id === 'status-sel') { const p = BY[t.dataset.id]; if (t.value === p.status) delete state.statusOv[p.id]; else state.statusOv[p.id] = t.value; memo.clear(); render(); openPlayer(p.id); toast('Estado actualizado'); }
+    if (t.id === 'premium-toggle') {
+      state.premium = t.checked;
+      if (!state.premium && FORMATIONS_PREM.includes(state.formation)) { state.formation = '4-3-3'; state.lineup = bestXI('4-3-3', state.squad); }
+      render(); toast(state.premium ? 'Formaciones premium activadas' : 'Formaciones premium desactivadas');
+    }
     if (t.id === 'official-file' && t.files[0]) {
       const r = new FileReader();
       r.onload = () => {
